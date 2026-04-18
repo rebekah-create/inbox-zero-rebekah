@@ -37,12 +37,16 @@ export async function captureAssistantChatTrace({
   logger,
   inboxStats,
   context,
+  chatHasHistory,
+  chatLastSeenRulesRevision,
 }: {
   emailAccount: ReturnType<typeof getEmailAccount>;
   messages: ModelMessage[];
   logger: Logger;
   inboxStats?: { total: number; unread: number } | null;
   context?: MessageContext;
+  chatHasHistory?: boolean;
+  chatLastSeenRulesRevision?: number | null;
 }) {
   const recordedToolCalls: RecordedToolCall[] = [];
   const stepTexts: string[] = [];
@@ -55,6 +59,8 @@ export async function captureAssistantChatTrace({
     user: emailAccount,
     inboxStats,
     context,
+    chatHasHistory,
+    chatLastSeenRulesRevision,
     logger,
     onStepFinish: async (step) => {
       steps.push(step);
