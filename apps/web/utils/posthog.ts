@@ -346,6 +346,23 @@ export async function trackUserDeleted(userId: string) {
   return posthogCaptureEvent("anonymous", "User deleted", { userId }, false);
 }
 
+export async function trackOnboardingAnswer(
+  email: string,
+  answers: {
+    surveyFeatures?: string[];
+    surveyRole?: string;
+    surveyGoal?: string;
+    surveyCompanySize?: number;
+    surveySource?: string;
+    surveyImprovements?: string;
+  },
+) {
+  return posthogCaptureEvent(email, "Onboarding answer submitted", {
+    ...answers,
+    $set: answers,
+  });
+}
+
 function getPosthogLlmEvalApprovedEmails() {
   return (
     env.POSTHOG_LLM_EVALS_APPROVED_EMAILS?.split(",")

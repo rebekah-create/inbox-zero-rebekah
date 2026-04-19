@@ -8,6 +8,7 @@ import {
 import { actionClientUser } from "@/utils/actions/safe-action";
 import prisma from "@/utils/prisma";
 import { updateContactCompanySize, updateContactRole } from "@inboxzero/loops";
+import { trackOnboardingAnswer } from "@/utils/posthog";
 
 export const completedOnboardingAction = actionClientUser
   .metadata({ name: "completedOnboarding" })
@@ -109,23 +110,33 @@ export const saveOnboardingAnswersAction = actionClientUser
       const extractedAnswers = extractSurveyAnswers(questions, answers);
 
       after(async () => {
-        if (extractedAnswers.surveyRole) {
-          await updateContactRole({
-            email: userEmail,
-            role: extractedAnswers.surveyRole,
-          }).catch((error) => {
-            logger.error("Loops: Error updating role", { error });
-          });
-        }
-
-        if (extractedAnswers.surveyCompanySize) {
-          await updateContactCompanySize({
-            email: userEmail,
-            companySize: extractedAnswers.surveyCompanySize,
-          }).catch((error) => {
-            logger.error("Loops: Error updating company size", { error });
-          });
-        }
+        await Promise.all([
+          extractedAnswers.surveyRole
+            ? updateContactRole({
+                email: userEmail,
+                role: extractedAnswers.surveyRole,
+              }).catch((error) => {
+                logger.error("Loops: Error updating role", { error });
+              })
+            : null,
+          extractedAnswers.surveyCompanySize
+            ? updateContactCompanySize({
+                email: userEmail,
+                companySize: extractedAnswers.surveyCompanySize,
+              }).catch((error) => {
+                logger.error("Loops: Error updating company size", { error });
+              })
+            : null,
+          Object.keys(extractedAnswers).length > 0
+            ? trackOnboardingAnswer(userEmail, extractedAnswers).catch(
+                (error) => {
+                  logger.error("PostHog: Error tracking onboarding answers", {
+                    error,
+                  });
+                },
+              )
+            : null,
+        ]);
       });
 
       await prisma.user.update({

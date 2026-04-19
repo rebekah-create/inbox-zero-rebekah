@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { StepWho } from "@/app/(app)/[emailAccountId]/onboarding/StepWho";
@@ -27,6 +27,7 @@ import { useSignUpEvent } from "@/hooks/useSignupEvent";
 import { isDefined } from "@/utils/types";
 import { env } from "@/env";
 import { StepCompanySize } from "@/app/(app)/[emailAccountId]/onboarding/StepCompanySize";
+import { StepHowYouHeard } from "@/app/(app)/[emailAccountId]/onboarding/StepHowYouHeard";
 import { StepInviteTeam } from "@/app/(app)/[emailAccountId]/onboarding/StepInviteTeam";
 import { toastError } from "@/components/Toast";
 import { usePremium } from "@/hooks/usePremium";
@@ -36,20 +37,16 @@ import {
   getOnboardingStepIndex,
   getVisibleOnboardingStepKeys,
   isOptionalOnboardingStep,
-  ONBOARDING_FLOW_VARIANTS,
   STEP_KEYS,
-  type OnboardingFlowVariant,
   type StepKey,
 } from "@/app/(app)/[emailAccountId]/onboarding/onboardingFlow";
-import { useOnboardingFlowVariant } from "@/hooks/useFeatureFlags";
 import { captureException, getActionErrorMessage } from "@/utils/error";
 
 interface OnboardingContentProps {
   step?: string;
-  variant?: OnboardingFlowVariant;
 }
 
-export function OnboardingContent({ step, variant }: OnboardingContentProps) {
+export function OnboardingContent({ step }: OnboardingContentProps) {
   const { emailAccountId, provider, isLoading } = useAccount();
   const { isPremium } = usePremium();
   const { data: membership, isLoading: isMembershipLoading } =
@@ -61,8 +58,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
     (membership?.isOwner && membership?.organizationId) ||
       (!membership?.organizationId && !membership?.hasPendingInvitationToOrg),
   );
-  const flaggedFlowVariant = useOnboardingFlowVariant();
-  const flowVariant = variant ?? flaggedFlowVariant;
 
   const stepMap: Record<string, (() => React.ReactNode) | undefined> = {
     [STEP_KEYS.WELCOME]: () => <StepWelcome onNext={onNext} />,
@@ -80,6 +75,7 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
       />
     ),
     [STEP_KEYS.COMPANY_SIZE]: () => <StepCompanySize onNext={onNext} />,
+    [STEP_KEYS.HOW_YOU_HEARD]: () => <StepHowYouHeard onNext={onNext} />,
     [STEP_KEYS.LABELS]: () => (
       <StepLabels
         provider={provider}
@@ -110,16 +106,10 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
           />
         )
       : undefined,
-    [STEP_KEYS.INBOX_PROCESSED]: () => (
-      <StepInboxProcessed flowVariant={flowVariant} onNext={onNext} />
-    ),
+    [STEP_KEYS.INBOX_PROCESSED]: () => <StepInboxProcessed onNext={onNext} />,
   };
 
   const visibleStepKeys = getVisibleOnboardingStepKeys({
-    flowVariant:
-      flowVariant === ONBOARDING_FLOW_VARIANTS.FAST_5
-        ? ONBOARDING_FLOW_VARIANTS.FAST_5
-        : ONBOARDING_FLOW_VARIANTS.CONTROL,
     canInviteTeam,
     autoDraftDisabled: Boolean(env.NEXT_PUBLIC_AUTO_DRAFT_DISABLED),
   }).filter((key) => isDefined(stepMap[key]));
@@ -131,7 +121,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
   const totalSteps = visibleStepKeys.length;
   const currentStepKey = visibleStepKeys[currentStepIndex];
   const nextStepKey = visibleStepKeys[currentStepIndex + 1];
-  const analyticsProps = useMemo(() => ({ flowVariant }), [flowVariant]);
 
   const router = useRouter();
   const analytics = useOnboardingAnalytics("onboarding");
@@ -142,11 +131,9 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
 
   const getOnboardingStepPath = useCallback(
     (stepKey: string) => {
-      return getOnboardingStepHref(emailAccountId, stepKey as StepKey, {
-        variant: flowVariant,
-      });
+      return getOnboardingStepHref(emailAccountId, stepKey as StepKey);
     },
-    [emailAccountId, flowVariant],
+    [emailAccountId],
   );
 
   useEffect(() => {
@@ -159,7 +146,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
         step: clampedStep,
         stepKey: currentStepKey,
         totalSteps,
-        ...analyticsProps,
       });
     }
 
@@ -168,11 +154,9 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
       stepKey: currentStepKey,
       totalSteps,
       isOptional: isOptionalOnboardingStep(currentStepKey),
-      ...analyticsProps,
     });
   }, [
     analytics,
-    analyticsProps,
     clampedStep,
     currentStepKey,
     isMembershipLoading,
@@ -189,7 +173,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
       nextStep: clampedStep < steps.length ? clampedStep + 1 : undefined,
       nextStepKey,
       isOptional: isOptionalOnboardingStep(currentStepKey),
-      ...analyticsProps,
     });
 
     if (clampedStep < steps.length) {
@@ -202,7 +185,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
         stepKey: currentStepKey,
         totalSteps,
         destination: isPremium ? "setup" : "welcome-upgrade",
-        ...analyticsProps,
       });
       markOnboardingAsCompleted(ASSISTANT_ONBOARDING_COOKIE);
       let result: Awaited<ReturnType<typeof completeOnboarding>>;
@@ -214,7 +196,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
             context: "onboarding",
             step: "complete",
             destination: isPremium ? "setup" : "welcome-upgrade",
-            flowVariant,
           },
         });
         toastError({
@@ -235,7 +216,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
             serverError: result?.serverError,
             validationErrors: result?.validationErrors,
             destination: isPremium ? "setup" : "welcome-upgrade",
-            flowVariant,
           },
         });
         toastError({
@@ -268,8 +248,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
     steps.length,
     isPremium,
     completeOnboarding,
-    analyticsProps,
-    flowVariant,
     getOnboardingStepPath,
   ]);
 
@@ -283,7 +261,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
       nextStep: clampedStep < steps.length ? clampedStep + 1 : undefined,
       nextStepKey,
       isOptional: true,
-      ...analyticsProps,
     });
 
     // Navigate directly — do not call onNext() which would also fire completion analytics.
@@ -292,7 +269,6 @@ export function OnboardingContent({ step, variant }: OnboardingContentProps) {
     router.push(getOnboardingStepPath(nextStepKey));
   }, [
     analytics,
-    analyticsProps,
     router,
     clampedStep,
     currentStepKey,
