@@ -9,7 +9,10 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import {
+  FacebookIcon,
+  GithubIcon,
   LinkedinIcon,
+  RedditIcon,
   TwitterIcon,
   YoutubeIcon,
 } from "@/app/(app)/[emailAccountId]/onboarding/BrandIcons";
@@ -57,6 +60,21 @@ const SOURCES = [
     value: "linkedin",
     label: "LinkedIn",
     icon: <LinkedinIcon className="size-4" />,
+  },
+  {
+    value: "reddit",
+    label: "Reddit",
+    icon: <RedditIcon className="size-4" />,
+  },
+  {
+    value: "facebook",
+    label: "Facebook",
+    icon: <FacebookIcon className="size-4" />,
+  },
+  {
+    value: "github",
+    label: "GitHub",
+    icon: <GithubIcon className="size-4" />,
   },
   {
     value: OTHER_VALUE,
