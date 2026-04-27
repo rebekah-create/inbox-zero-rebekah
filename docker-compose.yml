@@ -58,7 +58,7 @@ services:
       - all
 
   web:
-    image: ghcr.io/elie222/inbox-zero:latest
+    image: ghcr.io/rebekah-create/inbox-zero-rebekah:latest
     pull_policy: always
     env_file:
       - path: ./apps/web/.env
@@ -85,7 +85,7 @@ services:
     restart: always
 
   worker:
-    image: ghcr.io/elie222/inbox-zero:latest
+    image: ghcr.io/rebekah-create/inbox-zero-rebekah:latest
     pull_policy: always
     command: ["/app/docker/scripts/start-worker.sh"]
     env_file:
