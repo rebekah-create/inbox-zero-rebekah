@@ -114,7 +114,7 @@ type RuleRecordData = {
   enabled?: boolean;
   automate?: boolean;
   runOnThreads?: boolean;
-  conditionalOperator?: Rule["conditionalOperator"] | null;
+  conditionalOperator?: Rule["conditionalOperator"];
   categoryFilterType?: Rule["categoryFilterType"] | null;
   from?: string | null;
   to?: string | null;
