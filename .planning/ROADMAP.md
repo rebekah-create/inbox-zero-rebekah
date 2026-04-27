@@ -31,7 +31,17 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Attempting to create a second account is blocked — only rebekah@trueocean.com can sign in
   3. Pushing to main on GitHub triggers a Docker image build and push to ghcr.io/rebekah-create/inbox-zero-rebekah without manual steps
   4. The production server is running Rebekah's fork image, not the upstream elie222 image
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+
+**Wave 1:**
+- [ ] 01-PLAN-01.md — Update docker-compose.yml to fork image and deploy to server (OPS-04)
+- [ ] 01-PLAN-02.md — Upgrade CI/CD workflow to multi-platform with SHA tags (OPS-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*:
+- [ ] 01-PLAN-03.md — Set SSM env vars for signup lockdown and digest from-address, verify end-to-end (OPS-01, OPS-02)
+
+**Cross-cutting constraints:**
+- All plans verify requirements end-to-end, not just confirm code presence (D-06)
 
 ### Phase 2: Inbox Zero Recon
 **Goal**: Every major component of the Inbox Zero fork is mapped with a documented keep/replace/extend decision before any new code is written on top of it
@@ -118,7 +128,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Ops Fixes | 0/TBD | Not started | - |
+| 1. Ops Fixes | 0/3 | Ready to execute | - |
 | 2. Inbox Zero Recon | 0/TBD | Not started | - |
 | 3. Classification Engine | 0/TBD | Not started | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
