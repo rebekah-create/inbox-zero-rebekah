@@ -12,7 +12,7 @@ Seven phases take this project from a partially broken Inbox Zero fork to a full
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Ops Fixes** - Fix broken digest sender, lock signups, wire up CI/CD pipeline
+- [x] **Phase 1: Ops Fixes** - Fix broken digest sender, lock signups, wire up CI/CD pipeline *(completed 2026-04-27)*
 - [ ] **Phase 2: Inbox Zero Recon** - Audit fork internals and produce keep/replace/extend decisions
 - [ ] **Phase 3: Classification Engine** - Three-tier pipeline classifying every incoming email into 8 categories
 - [ ] **Phase 4: Daily Digest** - 6-7am email summarizing urgent items, deals, auto-filed counts, and uncertain items
@@ -34,11 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans in 2 waves
 
 **Wave 1:**
-- [ ] 01-PLAN-01.md — Update docker-compose.yml to fork image and deploy to server (OPS-04)
-- [ ] 01-PLAN-02.md — Upgrade CI/CD workflow to multi-platform with SHA tags (OPS-03)
+- [x] 01-PLAN-01.md — Update docker-compose.yml to fork image and deploy to server (OPS-04)
+- [x] 01-PLAN-02.md — Upgrade CI/CD workflow to multi-platform with SHA tags (OPS-03)
 
 **Wave 2** *(blocked on Wave 1 completion)*:
-- [ ] 01-PLAN-03.md — Set SSM env vars for signup lockdown and digest from-address, verify end-to-end (OPS-01, OPS-02)
+- [x] 01-PLAN-03.md — Set SSM env vars for signup lockdown and digest from-address, verify end-to-end (OPS-01, OPS-02)
 
 **Cross-cutting constraints:**
 - All plans verify requirements end-to-end, not just confirm code presence (D-06)
@@ -128,7 +128,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Ops Fixes | 0/3 | Ready to execute | - |
+| 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
 | 2. Inbox Zero Recon | 0/TBD | Not started | - |
 | 3. Classification Engine | 0/TBD | Not started | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
