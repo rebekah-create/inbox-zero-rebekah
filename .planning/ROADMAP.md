@@ -1,0 +1,127 @@
+# Roadmap: Personal Email AI
+
+## Overview
+
+Seven phases take this project from a partially broken Inbox Zero fork to a fully operational, single-tenant AI email system. Phase 1 fixes operational blockers independent of all other work. Phase 2 audits the fork before anything is built on top of it. Phases 3-7 build the classification engine, daily digest, rules UI, feedback system, and backlog triage in dependency order — each delivering a complete, verifiable capability.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Ops Fixes** - Fix broken digest sender, lock signups, wire up CI/CD pipeline
+- [ ] **Phase 2: Inbox Zero Recon** - Audit fork internals and produce keep/replace/extend decisions
+- [ ] **Phase 3: Classification Engine** - Three-tier pipeline classifying every incoming email into 8 categories
+- [ ] **Phase 4: Daily Digest** - 6-7am email summarizing urgent items, deals, auto-filed counts, and uncertain items
+- [ ] **Phase 5: Rules Management UI** - Simple page at inbox.tdfurn.com/rules for explicit classification instructions
+- [ ] **Phase 6: Feedback System** - In-email signals, narrative form, and Gmail behavioral feedback feeding classification
+- [ ] **Phase 7: Backlog Triage** - AI-assisted processing of 100k+ existing emails with batch proposals and human approval
+
+## Phase Details
+
+### Phase 1: Ops Fixes
+**Goal**: The server infrastructure is fully operational and locked down for single-tenant use
+**Depends on**: Nothing (first phase)
+**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04
+**Success Criteria** (what must be TRUE):
+  1. Digest email arrives in inbox from inbox-digest@tdfurn.com (not a wrong domain)
+  2. Attempting to create a second account is blocked — only rebekah@trueocean.com can sign in
+  3. Pushing to main on GitHub triggers a Docker image build and push to ghcr.io/rebekah-create/inbox-zero-rebekah without manual steps
+  4. The production server is running Rebekah's fork image, not the upstream elie222 image
+**Plans**: TBD
+
+### Phase 2: Inbox Zero Recon
+**Goal**: Every major component of the Inbox Zero fork is mapped with a documented keep/replace/extend decision before any new code is written on top of it
+**Depends on**: Phase 1
+**Requirements**: RECON-01, RECON-02, RECON-03, RECON-04, RECON-05, RECON-06
+**Success Criteria** (what must be TRUE):
+  1. Classification pipeline is documented — inputs, outputs, existing prompts, confidence scoring behavior
+  2. Rules engine is documented — how rules are stored, evaluated, and applied to incoming email
+  3. AI integration is documented — which models are called, at which endpoints, with what prompts
+  4. Database schema is documented for all tables relevant to classification and digests
+  5. Each major component has a written keep/replace/extend decision with rationale
+  6. Projected cost of current Inbox Zero AI usage vs. proposed three-tier architecture is calculated
+**Plans**: TBD
+
+### Phase 3: Classification Engine
+**Goal**: Every incoming email is automatically classified into one of 8 categories within 2 minutes of arrival, using a cost-respecting three-tier pipeline
+**Depends on**: Phase 2
+**Requirements**: CLASS-01, CLASS-02, CLASS-03, CLASS-04, CLASS-05, CLASS-06, CLASS-07, CLASS-08
+**Success Criteria** (what must be TRUE):
+  1. A new email arriving via PubSub is classified into exactly one of: Receipts, Deals, Newsletters, Marketing, Urgent, 2FA, Uncertain, Greers List — within 2 minutes
+  2. Urgent and Uncertain emails remain in the Gmail inbox; all others are labeled and archived
+  3. Each classification result is stored in Postgres with a confidence score
+  4. 2FA/OTP emails are auto-deleted after 24 hours
+  5. Emails from greers@trueocean.com are labeled "Greers List" and archived without touching the inbox
+  6. Explicit rules from the Rules UI are applied as the highest-priority tier before Haiku or Sonnet are called
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 4: Daily Digest
+**Goal**: Every morning between 6-7am, Rebekah receives one email that tells her what needs attention and what was auto-filed overnight
+**Depends on**: Phase 3
+**Requirements**: DIGEST-01, DIGEST-02, DIGEST-03, DIGEST-04, DIGEST-05, DIGEST-06, DIGEST-07
+**Success Criteria** (what must be TRUE):
+  1. A digest email arrives in rebekah@trueocean.com between 6:00am and 7:00am daily
+  2. The digest lists Urgent items with sender, subject, and a one-line summary
+  3. The digest lists noteworthy Deals based on active rules and thresholds
+  4. The digest shows auto-filed counts by category (e.g., "14 newsletters, 6 receipts filed")
+  5. The digest lists Uncertain items with thumbs-up/thumbs-down links that record feedback without requiring login
+  6. The digest narrative is generated by Claude Sonnet once per day
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 5: Rules Management UI
+**Goal**: Rebekah can write, edit, and delete explicit classification rules in plain language from a simple web page — no code changes needed
+**Depends on**: Phase 3
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06
+**Success Criteria** (what must be TRUE):
+  1. A page exists at inbox.tdfurn.com/rules and is accessible without login
+  2. Rebekah can type a plain-language rule (e.g., "emails from xyz about abc → Urgent") and save it
+  3. Rebekah can create sender-only rules to filter by origin rather than content
+  4. Existing rules can be edited or deleted from the same page
+  5. Active rules are automatically included in the classification prompt for the next incoming email
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 6: Feedback System
+**Goal**: Classification improves over time by capturing thumbs-up/down clicks, narrative corrections, and Gmail behavioral signals — all fed back into the classification prompt
+**Depends on**: Phase 4
+**Requirements**: FEEDBACK-01, FEEDBACK-02, FEEDBACK-03, FEEDBACK-04, FEEDBACK-05, FEEDBACK-06
+**Success Criteria** (what must be TRUE):
+  1. Clicking thumbs-up or thumbs-down on an Uncertain item in the digest records the feedback in Postgres tied to that email's classification
+  2. The digest contains a link to a narrative feedback form where Rebekah can describe corrections in free text
+  3. Relabeling an email in Gmail is detected and stored as a classification correction signal
+  4. Deleting an auto-filed email in Gmail is detected and stored as a negative classification signal
+  5. Accumulated feedback is incorporated into the classification prompt so future similar emails are classified better
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 7: Backlog Triage
+**Goal**: The 100k+ email backlog is processed through the classification pipeline and Rebekah can approve or reject batch actions before anything is changed in Gmail
+**Depends on**: Phase 3
+**Requirements**: BACKLOG-01, BACKLOG-02, BACKLOG-03, BACKLOG-04, BACKLOG-05
+**Success Criteria** (what must be TRUE):
+  1. The full email backlog can be run through the three-tier classification pipeline without exceeding Gmail API quotas or the $10/mo AI cost ceiling
+  2. Processing produces grouped batch proposals (delete, label, archive) organized by category and sender
+  3. Rebekah can review batch proposals and approve or reject each group before any Gmail action is taken
+  4. Backlog processing uses the Haiku Batch API to keep one-time cost within the ~$10-15 estimate
+**Plans**: TBD
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Ops Fixes | 0/TBD | Not started | - |
+| 2. Inbox Zero Recon | 0/TBD | Not started | - |
+| 3. Classification Engine | 0/TBD | Not started | - |
+| 4. Daily Digest | 0/TBD | Not started | - |
+| 5. Rules Management UI | 0/TBD | Not started | - |
+| 6. Feedback System | 0/TBD | Not started | - |
+| 7. Backlog Triage | 0/TBD | Not started | - |

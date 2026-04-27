@@ -111,3 +111,31 @@ Schema with all defaults is in `apps/web/env.ts` (Zod). Required at build time: 
 ## Production deployment
 
 Push to `main` → GitHub Actions builds `linux/arm64` image → pushes to `ghcr.io/rebekah-create/inbox-zero-rebekah:latest`. To deploy: `docker compose pull app && docker compose up -d app` on the server. The `deploy/` directory contains the systemd service, secret-loading script, and full rebuild runbook.
+
+## GSD Workflow
+
+This project uses [GSD](https://github.com/get-shit-done-cc/gsd) for planning and execution.
+
+**Planning artifacts live in `.planning/`:**
+- `PROJECT.md` — vision, requirements summary, key decisions
+- `REQUIREMENTS.md` — 42 v1 requirements with REQ-IDs across 7 categories
+- `ROADMAP.md` — 7 phases from Ops Fixes → Backlog Triage
+- `STATE.md` — current project position and session context
+
+**Phase sequence:**
+1. Ops Fixes (OPS-01–04) — fix broken digest sender, lock signups, CI/CD
+2. Inbox Zero Recon (RECON-01–06) — audit fork before building on it
+3. Classification Engine (CLASS-01–08) — three-tier rules → Haiku → Sonnet
+4. Daily Digest (DIGEST-01–07) — 6-7am email with feedback links
+5. Rules Management UI (RULES-01–06) — inbox.tdfurn.com/rules
+6. Feedback System (FEEDBACK-01–06) — signals feeding back into classification
+7. Backlog Triage (BACKLOG-01–05) — 100k email backlog with batch approval
+
+**Core constraint:** AI cost ≤ $10/mo additional. Three-tier architecture is non-negotiable — rules (free) → Haiku (~$1-2/mo) → Sonnet sparingly (digest narrative + true escalations only).
+
+**To continue work:**
+```bash
+/gsd-progress          # see where you are
+/gsd-plan-phase 1      # plan Phase 1 in detail
+/gsd-discuss-phase N   # clarify approach before planning
+```
