@@ -73,7 +73,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans in 5 waves
 
 **Wave 1:**
-- [ ] 03-01-PLAN.md — Wave 0 pre-flight: SSM env vars, Anthropic credit balance, Haiku model name verification (CLASS-02, CLASS-08)
+- [x] 03-01-PLAN.md — Wave 0 pre-flight: SSM env vars, Anthropic credit balance, Haiku model name verification (CLASS-02, CLASS-08) *(completed 2026-04-27)*
 
 **Wave 2** *(blocked on Wave 1)*:
 - [ ] 03-02-PLAN.md — Prisma migration: add ExecutedRule.confidenceScore + ai-choose-rule.test.ts RED stubs (CLASS-02, CLASS-03)
@@ -154,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
 | 2. Inbox Zero Recon | 1/1 | Complete | 2026-04-27 |
-| 3. Classification Engine | 0/5 | Ready to execute | - |
+| 3. Classification Engine | 1/5 | In progress | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
 | 5. Rules Management UI | 0/TBD | Not started | - |
 | 6. Feedback System | 0/TBD | Not started | - |
