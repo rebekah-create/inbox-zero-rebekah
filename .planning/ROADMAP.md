@@ -13,7 +13,7 @@ Seven phases take this project from a partially broken Inbox Zero fork to a full
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Ops Fixes** - Fix broken digest sender, lock signups, wire up CI/CD pipeline *(completed 2026-04-27)*
-- [ ] **Phase 2: Inbox Zero Recon** - Audit fork internals and produce keep/replace/extend decisions
+- [x] **Phase 2: Inbox Zero Recon** - Audit fork internals and produce keep/replace/extend decisions *(completed 2026-04-27)*
 - [ ] **Phase 3: Classification Engine** - Three-tier pipeline classifying every incoming email into 8 categories
 - [ ] **Phase 4: Daily Digest** - 6-7am email summarizing urgent items, deals, auto-filed counts, and uncertain items
 - [ ] **Phase 5: Rules Management UI** - Simple page at inbox.tdfurn.com/rules for explicit classification instructions
@@ -57,7 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan in 1 wave
 
 **Wave 1:**
-- [ ] 02-PLAN-01.md — Write RECON.md covering all six RECON requirements (RECON-01 through RECON-06)
+- [x] 02-PLAN-01.md — Write RECON.md covering all six RECON requirements (RECON-01 through RECON-06)
 
 ### Phase 3: Classification Engine
 **Goal**: Every incoming email is automatically classified into one of 8 categories within 2 minutes of arrival, using a cost-respecting three-tier pipeline
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
-| 2. Inbox Zero Recon | 0/1 | Ready to execute | - |
+| 2. Inbox Zero Recon | 1/1 | Complete | 2026-04-27 |
 | 3. Classification Engine | 0/TBD | Not started | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
 | 5. Rules Management UI | 0/TBD | Not started | - |

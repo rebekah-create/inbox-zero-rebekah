@@ -14,12 +14,12 @@
 
 ### Recon (RECON)
 
-- [ ] **RECON-01**: Inbox Zero's email classification pipeline is mapped — inputs, outputs, prompts, confidence scoring
-- [ ] **RECON-02**: Inbox Zero's rules engine is mapped — how rules are stored, evaluated, and applied
-- [ ] **RECON-03**: Inbox Zero's AI integration is mapped — which models, which endpoints, what prompts
-- [ ] **RECON-04**: Database schema is mapped — key tables relevant to classification and digests
-- [ ] **RECON-05**: Each major component has a keep/replace/extend decision with rationale
-- [ ] **RECON-06**: Cost analysis of current Inbox Zero AI usage vs. proposed three-tier architecture
+- [x] **RECON-01**: Inbox Zero's email classification pipeline is mapped — inputs, outputs, prompts, confidence scoring
+- [x] **RECON-02**: Inbox Zero's rules engine is mapped — how rules are stored, evaluated, and applied
+- [x] **RECON-03**: Inbox Zero's AI integration is mapped — which models, which endpoints, what prompts
+- [x] **RECON-04**: Database schema is mapped — key tables relevant to classification and digests
+- [x] **RECON-05**: Each major component has a keep/replace/extend decision with rationale
+- [x] **RECON-06**: Cost analysis of current Inbox Zero AI usage vs. proposed three-tier architecture
 
 ### Classification (CLASS)
 
@@ -107,12 +107,12 @@
 | OPS-02 | Phase 1: Ops Fixes | Pending |
 | OPS-03 | Phase 1: Ops Fixes | Pending |
 | OPS-04 | Phase 1: Ops Fixes | Pending |
-| RECON-01 | Phase 2: Inbox Zero Recon | Pending |
-| RECON-02 | Phase 2: Inbox Zero Recon | Pending |
-| RECON-03 | Phase 2: Inbox Zero Recon | Pending |
-| RECON-04 | Phase 2: Inbox Zero Recon | Pending |
-| RECON-05 | Phase 2: Inbox Zero Recon | Pending |
-| RECON-06 | Phase 2: Inbox Zero Recon | Pending |
+| RECON-01 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
+| RECON-02 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
+| RECON-03 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
+| RECON-04 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
+| RECON-05 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
+| RECON-06 | Phase 2: Inbox Zero Recon | Complete (2026-04-27) |
 | CLASS-01 | Phase 3: Classification Engine | Pending |
 | CLASS-02 | Phase 3: Classification Engine | Pending |
 | CLASS-03 | Phase 3: Classification Engine | Pending |
