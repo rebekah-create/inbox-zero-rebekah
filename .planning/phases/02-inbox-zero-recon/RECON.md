@@ -549,7 +549,7 @@ DigestItem.content is redacted to `[REDACTED]` after digest send. Feedback links
 ### Question 1: Is the Anthropic API key pay-as-you-go or prepaid credits?
 
 - **Command attempted:** Check Anthropic console or SSM for spending limit configuration
-- **Result:** Unable to determine — verify manually at console.anthropic.com before Phase 3. Navigate to Settings → Billing → Usage limits. Confirm there is no hard monthly spending cap set below $10. The API key itself is confirmed set in SSM (`ANTHROPIC_API_KEY`), but whether the key is pay-as-you-go vs. prepaid credits cannot be determined from the codebase or executor context.
+- **Result:** **PREPAID CREDITS** (confirmed by Rebekah 2026-04-27). The account uses a prepaid credit balance, not pay-as-you-go billing. Phase 3 implication: prepaid credits expire and do not auto-replenish — monitor the balance at console.anthropic.com before and during Phase 3 deployment. The $10/month budget ceiling from the cost analysis is still valid as a guideline, but actual available budget depends on remaining credit balance. Rebekah must top up credits if the balance drops below the expected Phase 3 usage (~$1.88/month proposed).
 
 ---
 
@@ -569,14 +569,14 @@ WHERE "emailAccountId" IN (
 ```bash
 ssh ec2-user@<production-host> 'docker exec <postgres-container> psql -U inbox_zero -d inbox_zero -c "SELECT count(*) FROM \"Rule\" WHERE \"emailAccountId\" IN (SELECT id FROM \"EmailAccount\" WHERE \"userId\" IN (SELECT id FROM \"User\" WHERE email = '"'"'rebekah@trueocean.com'"'"'))"'
 ```
-- **Result:** Query not run — SSH access to production server is not available in executor context. Execute this SQL manually on the production server before Phase 3 planning. The count determines how many rules will appear in the AI prompt (affects token count and cost estimates). If zero rules exist, Phase 3 must seed all eight classification rules.
+- **Result:** **10 rules exist** (confirmed 2026-04-27 via `ssh -i ~/.ssh/inbox_key ubuntu@inbox.tdfurn.com 'docker exec inbox-zero-postgres psql -U inboxzero -d inboxzero -c ...'`). Phase 3 implication: 10 rules will appear in the AI classification prompt. Phase 3 must decide whether to keep these 10 rules as-is, replace them with the 8 canonical classification rules (Receipts, Deals, Newsletters, Marketing, Urgent, 2FA, Uncertain, Greers List), or merge them. The current 10 rules likely include some of the upstream systemType rules (TO_REPLY, FYI, etc.) — Phase 3 planning should inspect the actual rule names before writing the seed script.
 
 ---
 
 ### Question 3: Is ECONOMY_LLM_PROVIDER set in production SSM?
 
 - **Command attempted:** `aws ssm get-parameter --name /inbox-zero/ECONOMY_LLM_PROVIDER --region us-east-1 2>&1`
-- **Result:** AWS CLI not available in executor context. Unable to determine — execute this command manually before Phase 3. Based on CLAUDE.md and Phase 1 records, this parameter was NOT set during initial setup. If the command returns `ParameterNotFound`, confirm that economy tasks are falling back to Sonnet (as the cost analysis assumes). Phase 3 must set `ECONOMY_LLM_PROVIDER=anthropic` and `ECONOMY_LLM_MODEL=claude-haiku-3-5` in SSM before deploying the tiered classification engine.
+- **Result:** **ParameterNotFound** (confirmed by Rebekah 2026-04-27 via `aws ssm get-parameter --name /inbox-zero/ECONOMY_LLM_PROVIDER --region us-east-1`). The parameter does not exist in SSM. This validates the cost analysis assumption: all economy/nano/chat/draft model calls are currently falling back to Sonnet (`claude-sonnet-4-6`), confirming the ~$7.26/month current cost estimate. Phase 3 must set `ECONOMY_LLM_PROVIDER=anthropic` and `ECONOMY_LLM_MODEL=claude-haiku-3-5` in SSM before deploying the tiered classification engine.
 
 ---
 
@@ -587,6 +587,6 @@ Before writing any Phase 3 classification code, complete these items:
 - [ ] Add `confidenceScore Float?` to `ExecutedRule` in prisma/schema.prisma and run migration
 - [ ] Set `ECONOMY_LLM_PROVIDER=anthropic` and `ECONOMY_LLM_MODEL=claude-haiku-3-5` in SSM
 - [ ] Set `NANO_LLM_PROVIDER=anthropic` and `NANO_LLM_MODEL=claude-haiku-3-5` in SSM
-- [ ] Create the eight classification Rules in the database (or seed script) with correct Action rows
-- [ ] Verify Anthropic API key spending limit is not set below $10/month
+- [ ] Inspect the existing 10 Rules in production (names, types, actions) before deciding whether to replace, merge, or keep — `SELECT id, name, "systemType", enabled FROM "Rule" WHERE "emailAccountId" IN (...)`; then create/replace with the eight canonical classification rules with correct Action rows
+- [ ] Verify Anthropic prepaid credit balance at console.anthropic.com is sufficient for Phase 3 usage (~$1.88/month projected) and top up if needed
 - [ ] Confirm `multiRuleSelectionEnabled = false` is correct for single-rule eight-category taxonomy
