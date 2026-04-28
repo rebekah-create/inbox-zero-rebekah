@@ -475,10 +475,8 @@ DigestItem.content is redacted to `[REDACTED]` after digest send. Feedback links
 
 **Rationale:** React Email + Resend rendering, Schedule table, and PENDING→PROCESSING→SENT state machine are correct and operational. The pipeline is already sending digests (Phase 1 fixed the from-address).
 
-**Phase 3 / Phase 4 action:**
-1. Add thumbs-up/down feedback links per DigestItem (DIGEST-07) — links must encode email identity in URL token since DigestItem.content is redacted post-send.
-2. Add explicit Urgent and Uncertain sections to the digest template.
-3. Verify `Schedule.timeOfDay` is set to deliver between 6-7am Eastern.
+**Phase 3 action:** Ensure Urgent and Uncertain rules have no ARCHIVE action; verify `Schedule.timeOfDay` is set to deliver between 6-7am Eastern.
+**Phase 4 action:** Add thumbs-up/down feedback links per DigestItem (DIGEST-07) — links must encode email identity in URL token since DigestItem.content is redacted post-send; add explicit Urgent and Uncertain sections to the digest template.
 
 ---
 
@@ -488,6 +486,7 @@ DigestItem.content is redacted to `[REDACTED]` after digest send. Feedback links
 
 **Rationale:** The label-add/remove learning loop is live and already feeding back into AI prompts (up to 10 items per sender). This is a strong foundation for Phase 6. No replacement needed.
 
+**Phase 3 action:** No code changes needed. Ensure the eight classification rules use LABEL actions with names that map to Gmail labels the webhook can detect via LABEL_ADDED events — this ensures the existing learning loop works for the new rules automatically.
 **Phase 6 action:** Add thumbs-up/down feedback from digest email. This requires either a new `eventType` value or a companion table since digest votes are explicit (user-initiated) rather than implicit (label changes observed by webhook).
 
 ---
