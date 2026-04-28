@@ -79,7 +79,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 03-02-PLAN.md — Prisma migration: add ExecutedRule.confidenceScore + ai-choose-rule.test.ts RED stubs (CLASS-02, CLASS-03) *(completed 2026-04-27)*
 
 **Wave 3** *(blocked on Wave 2)*:
-- [ ] 03-03-PLAN.md — Seed 8 canonical rules in production DB; delete 6 old content rules (CLASS-01, CLASS-04, CLASS-05, CLASS-06, CLASS-07)
+- [x] 03-03-PLAN.md — Seed 8 canonical rules in production DB; delete 6 old content rules (CLASS-01, CLASS-04, CLASS-05, CLASS-06, CLASS-07) *(completed 2026-04-27)*
 
 **Wave 4** *(blocked on Waves 2 + 3)*:
 - [ ] 03-04-PLAN.md — Two-call escalation, confidenceScore threading, conversation meta-rule guard, deploy (CLASS-01..CLASS-08)
@@ -154,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
 | 2. Inbox Zero Recon | 1/1 | Complete | 2026-04-27 |
-| 3. Classification Engine | 2/5 | In progress | - |
+| 3. Classification Engine | 3/5 | In progress | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
 | 5. Rules Management UI | 0/TBD | Not started | - |
 | 6. Feedback System | 0/TBD | Not started | - |

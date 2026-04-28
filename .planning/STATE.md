@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 7 (Classification Engine)
-Plan: 2 of 5 in current phase
-Status: Executing Phase 3 — Wave 2 complete, Wave 3 ready
-Last activity: 2026-04-27 — 03-02 complete: confidenceScore migration + RED test stubs committed
+Plan: 3 of 5 in current phase
+Status: Executing Phase 3 — Wave 3 complete, Wave 4 ready
+Last activity: 2026-04-27 — 03-03 complete: 8 canonical rules seeded in production, 6 old rules removed
 
 Progress: [██░░░░░░░░] 28% (2 of 7 phases complete)
 
