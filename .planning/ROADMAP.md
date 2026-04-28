@@ -145,6 +145,23 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Backlog processing uses the Haiku Batch API to keep one-time cost within the ~$10-15 estimate
 **Plans**: TBD
 
+## Backlog
+
+### Phase 999.1: Sender/Domain Whitelist UI (BACKLOG)
+
+**Goal:** A dedicated settings page to manage "always deliver to inbox" senders and domains. Matching emails bypass all rule classification and land in the inbox untouched.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Notes:**
+- Should support full addresses (`user@domain.com`) and domain wildcards (`@domain.com`)
+- Backend: new `SenderWhitelist` model (emailAccountId, pattern, type: EMAIL|DOMAIN, label?)
+- Short-circuit check at top of `findPotentialMatchingRules()` before any rule evaluation
+- Existing workaround: static Rules with `from` filter + LABEL action (no ARCHIVE) — currently serving this purpose for `@trueocean.com` and `@tdfurn.com`
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
 ## Progress
 
 **Execution Order:**
