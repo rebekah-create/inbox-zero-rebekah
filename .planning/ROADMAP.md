@@ -54,7 +54,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Database schema is documented for all tables relevant to classification and digests
   5. Each major component has a written keep/replace/extend decision with rationale
   6. Projected cost of current Inbox Zero AI usage vs. proposed three-tier architecture is calculated
-**Plans**: TBD
+**Plans**: 1 plan in 1 wave
+
+**Wave 1:**
+- [ ] 02-PLAN-01.md — Write RECON.md covering all six RECON requirements (RECON-01 through RECON-06)
 
 ### Phase 3: Classification Engine
 **Goal**: Every incoming email is automatically classified into one of 8 categories within 2 minutes of arrival, using a cost-respecting three-tier pipeline
@@ -129,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
-| 2. Inbox Zero Recon | 0/TBD | Not started | - |
+| 2. Inbox Zero Recon | 0/1 | Ready to execute | - |
 | 3. Classification Engine | 0/TBD | Not started | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
 | 5. Rules Management UI | 0/TBD | Not started | - |
