@@ -566,9 +566,10 @@ model ExecutedRule {
   threadId      String
   messageId     String
   status        ExecutedRuleStatus
-  automated     Boolean
-  reason        String?
-  matchMetadata Json? // Stores structured match information (e.g., learned patterns, match types)
+  automated       Boolean
+  reason          String?
+  confidenceScore Float?   // AI classification confidence 0-1; null for static/learned matches (Phase 3 D-03)
+  matchMetadata   Json? // Stores structured match information (e.g., learned patterns, match types)
 
   // may be null if the rule was deleted
   ruleId String?
