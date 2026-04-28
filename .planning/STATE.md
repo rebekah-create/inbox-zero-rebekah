@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 7 (Classification Engine)
-Plan: 1 of 5 in current phase
-Status: Executing Phase 3 — Wave 1 complete, Wave 2 ready
-Last activity: 2026-04-27 — 03-01 complete: SSM pre-flight done, all 5 env vars set, Haiku model claude-haiku-4-5-20251001 verified
+Plan: 2 of 5 in current phase
+Status: Executing Phase 3 — Wave 2 complete, Wave 3 ready
+Last activity: 2026-04-27 — 03-02 complete: confidenceScore migration + RED test stubs committed
 
 Progress: [██░░░░░░░░] 28% (2 of 7 phases complete)
 
