@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 7 (Classification Engine)
-Plan: 3 of 5 in current phase
-Status: Executing Phase 3 — Wave 3 complete, Wave 4 ready
-Last activity: 2026-04-27 — 03-03 complete: 8 canonical rules seeded in production, 6 old rules removed
+Plan: 4 of 5 in current phase
+Status: Executing Phase 3 — Wave 4 complete, Wave 5 ready
+Last activity: 2026-04-28 — 03-04 complete: two-call escalation, confidenceScore threading, meta-rule guard deployed; migration applied to production
 
 Progress: [██░░░░░░░░] 28% (2 of 7 phases complete)
 
@@ -63,7 +63,7 @@ None yet.
 - Anthropic key is prepaid credits — monitor balance at console.anthropic.com before Phase 3 deployment
 - 10 rules exist in production — Phase 3 must inspect names before deciding replace vs. merge strategy
 - ECONOMY_LLM_PROVIDER confirmed unset in SSM — Phase 3 must set before deploying tiered classification *(RESOLVED 2026-04-27: all 4 ECONOMY/NANO vars set to claude-haiku-4-5-20251001)*
-- Anthropic credit balance $2.91 — below $5 safety threshold; top up to $10 before Wave 4 deploy
+- Anthropic credit balance $2.91 — below $5 safety threshold; top up to $10 before Wave 5 testing
 - Haiku model name staleness: claude-haiku-4-5-20251001 will eventually be deprecated; SSM params must be updated manually when that happens (no automated detection in place)
 
 ## Deferred Items
