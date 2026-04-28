@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Inbox only shows things that need Rebekah — everything else is already filed before she opens Gmail.
-**Current focus:** Phase 2 — Inbox Zero Recon
+**Current focus:** Phase 3 — Classification Engine
 
 ## Current Position
 
-Phase: 2 of 7 (Inbox Zero Recon)
-Plan: 1 of 1 in current phase
-Status: Phase 2 complete — ready to transition to Phase 3
-Last activity: 2026-04-27 — Phase 2 plan 01 executed (RECON.md written, all 6 RECON requirements satisfied)
+Phase: 3 of 7 (Classification Engine)
+Plan: 0 of TBD in current phase
+Status: Ready to plan Phase 3
+Last activity: 2026-04-27 — Phase 2 verified complete (all open questions answered; RECON.md finalized with live production data)
 
 Progress: [██░░░░░░░░] 28% (2 of 7 phases complete)
 
@@ -60,10 +60,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 3 gate: three open questions deferred from Phase 2 — must be answered manually before Phase 3 planning:
-  1. Rule count in production DB (SQL in RECON.md Open Questions section)
-  2. Anthropic API key type (check console.anthropic.com → Billing → Usage limits)
-  3. ECONOMY_LLM_PROVIDER in SSM (run `aws ssm get-parameter --name /inbox-zero/ECONOMY_LLM_PROVIDER --region us-east-1`)
+- Anthropic key is prepaid credits — monitor balance at console.anthropic.com before Phase 3 deployment
+- 10 rules exist in production — Phase 3 must inspect names before deciding replace vs. merge strategy
+- ECONOMY_LLM_PROVIDER confirmed unset in SSM — Phase 3 must set before deploying tiered classification
 
 ## Deferred Items
 
@@ -74,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-27
-Stopped at: Phase 2 plan 01 complete — RECON.md written with all 6 RECON requirements satisfied; ready for Phase 3 planning after open questions resolved
+Stopped at: Phase 2 fully verified — RECON.md finalized with all three open questions answered. Ready for Phase 3 planning.
 Resume file: None
