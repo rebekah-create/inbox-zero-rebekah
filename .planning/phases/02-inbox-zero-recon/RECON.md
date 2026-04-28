@@ -569,7 +569,28 @@ WHERE "emailAccountId" IN (
 ```bash
 ssh ec2-user@<production-host> 'docker exec <postgres-container> psql -U inbox_zero -d inbox_zero -c "SELECT count(*) FROM \"Rule\" WHERE \"emailAccountId\" IN (SELECT id FROM \"EmailAccount\" WHERE \"userId\" IN (SELECT id FROM \"User\" WHERE email = '"'"'rebekah@trueocean.com'"'"'))"'
 ```
-- **Result:** **10 rules exist** (confirmed 2026-04-27 via `ssh -i ~/.ssh/inbox_key ubuntu@inbox.tdfurn.com 'docker exec inbox-zero-postgres psql -U inboxzero -d inboxzero -c ...'`). Phase 3 implication: 10 rules will appear in the AI classification prompt. Phase 3 must decide whether to keep these 10 rules as-is, replace them with the 8 canonical classification rules (Receipts, Deals, Newsletters, Marketing, Urgent, 2FA, Uncertain, Greers List), or merge them. The current 10 rules likely include some of the upstream systemType rules (TO_REPLY, FYI, etc.) — Phase 3 planning should inspect the actual rule names before writing the seed script.
+- **Result:** **10 rules exist** (confirmed 2026-04-27 via `ssh -i ~/.ssh/inbox_key ubuntu@inbox.tdfurn.com`). All 10 are upstream `systemType` rules — no custom Rebekah rules exist.
+
+**Full rule inventory (production, 2026-04-27):**
+
+| Rule Name | systemType | Actions | Fate in Phase 3 |
+|-----------|------------|---------|-----------------|
+| To Reply | TO_REPLY | LABEL + DRAFT_EMAIL | KEEP — conversation management, orthogonal to classification |
+| FYI | FYI | LABEL | KEEP — conversation management, orthogonal to classification |
+| Awaiting Reply | AWAITING_REPLY | LABEL | KEEP — conversation management, orthogonal to classification |
+| Actioned | ACTIONED | LABEL | KEEP — conversation management, orthogonal to classification |
+| Cold Email | COLD_EMAIL | LABEL + ARCHIVE | REPLACE — fold into Marketing or delete; not in 8-category taxonomy |
+| Calendar | CALENDAR | LABEL | REPLACE — not in 8-category taxonomy |
+| Newsletter | NEWSLETTER | LABEL + **DIGEST** | REPLACE — rewrite with correct actions (LABEL + ARCHIVE + DIGEST); **preserve DIGEST action — this is currently the only rule feeding the morning digest** |
+| Marketing | MARKETING | LABEL + ARCHIVE | REPLACE — rewrite with correct actions (add DIGEST) |
+| Notification | NOTIFICATION | LABEL | REPLACE — not in 8-category taxonomy; fold into Marketing or delete |
+| Receipt | RECEIPT | LABEL | REPLACE — rewrite with correct actions (add ARCHIVE + DIGEST) |
+
+**Phase 3 rule strategy:**
+- **Keep the 4 conversation-management rules** (To Reply, FYI, Awaiting Reply, Actioned) — they label threads based on user state, not incoming email content, and do not interfere with classification.
+- **Replace the 6 content-classification rules** with the 8 canonical rules: Receipts, Deals, Newsletters, Marketing, Urgent, 2FA, Uncertain, Greers List.
+- **Critical:** The Newsletter rule is the only one currently connected to DIGEST. When replacing it, ensure the new Newsletter rule carries DIGEST — or the morning digest will stop receiving items.
+- **New rules not in current set:** Deals, Urgent, 2FA, Uncertain, Greers List — all must be created from scratch with correct Action rows.
 
 ---
 
@@ -587,6 +608,6 @@ Before writing any Phase 3 classification code, complete these items:
 - [ ] Add `confidenceScore Float?` to `ExecutedRule` in prisma/schema.prisma and run migration
 - [ ] Set `ECONOMY_LLM_PROVIDER=anthropic` and `ECONOMY_LLM_MODEL=claude-haiku-3-5` in SSM
 - [ ] Set `NANO_LLM_PROVIDER=anthropic` and `NANO_LLM_MODEL=claude-haiku-3-5` in SSM
-- [ ] Inspect the existing 10 Rules in production (names, types, actions) before deciding whether to replace, merge, or keep — `SELECT id, name, "systemType", enabled FROM "Rule" WHERE "emailAccountId" IN (...)`; then create/replace with the eight canonical classification rules with correct Action rows
+- [ ] Replace the 6 content-classification rules (Cold Email, Calendar, Newsletter, Marketing, Notification, Receipt) with the 8 canonical rules (Receipts, Deals, Newsletters, Marketing, Urgent, 2FA, Uncertain, Greers List) — keep the 4 conversation-management rules (To Reply, FYI, Awaiting Reply, Actioned) as-is; ensure new Newsletter rule carries DIGEST action (currently the only rule feeding the digest)
 - [ ] Verify Anthropic prepaid credit balance at console.anthropic.com is sufficient for Phase 3 usage (~$1.88/month projected) and top up if needed
 - [ ] Confirm `multiRuleSelectionEnabled = false` is correct for single-rule eight-category taxonomy
