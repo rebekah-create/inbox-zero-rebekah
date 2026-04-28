@@ -21,6 +21,7 @@ import type {
   MatchingRuleResult,
   RuleSelectionMetadata,
 } from "@/utils/ai/choose-rule/types";
+import { CONVERSATION_TRACKING_META_RULE_ID } from "@/utils/ai/choose-rule/run-rules";
 import {
   extractEmailAddress,
   extractEmailAddresses,
@@ -58,6 +59,7 @@ type MatchingRulesResult = {
   }[];
   reasoning: string;
   selectionMetadata: RuleSelectionMetadata;
+  confidenceScore?: number;
 };
 
 export async function findMatchingRules({
@@ -180,6 +182,11 @@ async function findPotentialMatchingRules({
 
   // Go through all rules and collect matches and potential AI matches
   for (const rule of rules) {
+    // Phase 3 D-06: exclude the conversation tracking meta-rule from content classification prompts.
+    // Conversation rules continue to fire via prepareRulesWithMetaRule's separate path; they must
+    // not pollute the AI candidate list passed to Haiku/Sonnet.
+    if (rule.id === CONVERSATION_TRACKING_META_RULE_ID) continue;
+
     // Special case for calendar rules - only match with high-confidence signals
     const calendarMatch =
       rule.systemType === SystemType.CALENDAR && isCalendarInvite(message);
@@ -560,6 +567,7 @@ async function findMatchingRulesWithReasons(
     const result = {
       rules: filterMultipleSystemRules(fullResult.rules),
       reason: fullResult.reason,
+      confidenceScore: fullResult.confidenceScore,
     };
 
     // Build combined matches: update existing matches with AI reasons if AI also chose them,
@@ -603,6 +611,7 @@ async function findMatchingRulesWithReasons(
       matches: combinedMatches,
       reasoning: combinedReasoning,
       selectionMetadata,
+      confidenceScore: result.confidenceScore,
     };
   } else {
     return {

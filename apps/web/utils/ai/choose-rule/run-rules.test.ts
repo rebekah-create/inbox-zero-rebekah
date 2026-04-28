@@ -1511,3 +1511,69 @@ describe("runRules - double draft prevention", () => {
     );
   });
 });
+
+describe("runRules confidenceScore persistence (CLASS-03)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("persists confidenceScore to ExecutedRule when AI tier is used (CLASS-03)", async () => {
+    const aiRule = createRule("ai-rule");
+
+    // findMatchingRules returns a match with confidenceScore from the AI tier
+    vi.mocked(findMatchingRules).mockResolvedValue({
+      matches: [{ rule: aiRule, matchReasons: [{ type: ConditionType.AI }] }],
+      reasoning: "AI matched rule",
+      confidenceScore: 0.85,
+      selectionMetadata: {
+        isThread: false,
+        skippedThreadRuleNames: [],
+        continuedThreadRuleNames: [],
+        learnedPatternExcludedRules: [],
+        filteredConversationRuleNames: [],
+        remainingAiRuleNames: [],
+      },
+    } as any);
+
+    prisma.executedRule.findFirst.mockResolvedValue(null);
+    vi.mocked(getActionItemsWithAiArgs).mockResolvedValue([]);
+
+    const createSpy = prisma.executedRule.create.mockResolvedValue({
+      id: "exec-confidence-1",
+      status: ExecutedRuleStatus.APPLIED,
+      ruleId: aiRule.id,
+      threadId,
+      messageId: "message-confidence-1",
+      actionItems: [],
+    } as any);
+
+    await runRules({
+      provider: {} as any,
+      message: {
+        ...getEmail(),
+        id: "message-confidence-1",
+        threadId,
+        snippet: "",
+        historyId: "history-1",
+        inline: [],
+        attachments: [],
+        headers: {
+          from: "sender@example.com",
+          to: "user@example.com",
+          subject: "Subject",
+          date: "Mon, 1 Jan 2026 12:00:00 +0000",
+          "message-id": "<message-confidence-1>",
+        },
+      } as any,
+      rules: [aiRule],
+      emailAccount: getEmailAccount(),
+      isTest: false,
+      modelType: "default" as any,
+      logger,
+    });
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    const createCall = createSpy.mock.calls[0]?.[0];
+    expect(createCall?.data?.confidenceScore).toBe(0.85);
+  });
+});

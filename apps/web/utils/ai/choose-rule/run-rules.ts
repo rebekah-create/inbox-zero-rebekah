@@ -78,6 +78,7 @@ export type RunRulesResult = {
   selectionMetadata?: RuleSelectionMetadata;
   existing?: boolean;
   createdAt: Date;
+  confidenceScore?: number | null;
 };
 
 export const CONVERSATION_TRACKING_META_RULE_ID = "conversation-tracking-meta";
@@ -259,6 +260,7 @@ export async function runRules({
       batchTimestamp,
       logger,
       skipArchive,
+      results.confidenceScore,
     );
 
     executedRules.push({
@@ -373,6 +375,7 @@ async function executeMatchedRule(
   batchTimestamp: Date,
   logger: Logger,
   skipArchive?: boolean,
+  confidenceScore?: number | null,
 ) {
   const blockedActionTypes = getBlockedLowTrustStaticFromActionTypes(
     rule.from,
@@ -427,6 +430,7 @@ async function executeMatchedRule(
           rule: rule?.id ? { connect: { id: rule.id } } : undefined,
           emailAccount: { connect: { id: emailAccount.id } },
           createdAt: batchTimestamp,
+          confidenceScore: confidenceScore ?? null,
         },
       });
     }
@@ -503,6 +507,7 @@ async function executeMatchedRule(
           rule: rule?.id ? { connect: { id: rule.id } } : undefined,
           emailAccount: { connect: { id: emailAccount.id } },
           createdAt: batchTimestamp, // Use batch timestamp for grouping
+          confidenceScore: confidenceScore ?? null,
         },
         include: { actionItems: true },
       }),

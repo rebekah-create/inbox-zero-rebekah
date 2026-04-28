@@ -20,6 +20,7 @@ import type {
 import type { EmailProvider } from "@/utils/email/types";
 import prisma from "@/utils/__mocks__/prisma";
 import { aiChooseRule } from "@/utils/ai/choose-rule/ai-choose-rule";
+import { CONVERSATION_TRACKING_META_RULE_ID } from "@/utils/ai/choose-rule/run-rules";
 import { getEmailAccount, createTestLogger } from "@/__tests__/helpers";
 import { ConditionType } from "@/utils/config";
 import {
@@ -2965,6 +2966,49 @@ describe("findMatchingRules - Integration Tests", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it("excludes conversation tracking meta-rule from potentialAiMatches (D-06)", async () => {
+    // Build a rules array where one rule has id === CONVERSATION_TRACKING_META_RULE_ID
+    const metaRule = getRule({
+      id: CONVERSATION_TRACKING_META_RULE_ID,
+      instructions: "Conversation tracking meta-rule instructions",
+    });
+    const regularAiRule = getRule({
+      id: "regular-ai-rule",
+      instructions: "Regular AI rule instructions",
+    });
+
+    vi.mocked(aiChooseRule).mockResolvedValue({
+      rules: [{ rule: regularAiRule as any, isPrimary: true }],
+      reason: "Matched regular AI rule",
+      confidenceScore: 0.9,
+    });
+
+    const rules = [metaRule, regularAiRule];
+    const message = getMessage({
+      headers: getHeaders({ from: "user@example.com" }),
+    });
+    const emailAccount = getEmailAccount();
+
+    await findMatchingRules({
+      rules,
+      message,
+      emailAccount,
+      provider,
+      modelType: "default",
+      logger,
+    });
+
+    // aiChooseRule must have been called (for regularAiRule)
+    expect(aiChooseRule).toHaveBeenCalled();
+
+    // The meta-rule must NOT appear in the rules passed to aiChooseRule
+    const calledRules = vi.mocked(aiChooseRule).mock.calls[0]?.[0]?.rules ?? [];
+    const metaRulePassedToAi = calledRules.some(
+      (r: { id: string }) => r.id === CONVERSATION_TRACKING_META_RULE_ID,
+    );
+    expect(metaRulePassedToAi).toBe(false);
   });
 });
 

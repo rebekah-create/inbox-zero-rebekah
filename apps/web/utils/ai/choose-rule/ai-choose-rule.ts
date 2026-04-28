@@ -36,6 +36,7 @@ export async function aiChooseRule<
 }): Promise<{
   rules: { rule: T; isPrimary?: boolean }[];
   reason: string;
+  confidenceScore?: number;
 }> {
   if (!rules.length) return { rules: [], reason: "No rules to evaluate" };
 
@@ -70,12 +71,14 @@ export async function aiChooseRule<
     return {
       rules: [],
       reason: aiResponse.reasoning || "AI determined no rules matched",
+      confidenceScore: aiResponse.confidenceScore,
     };
   }
 
   return {
     rules: rulesWithMetadata,
     reason: aiResponse.reasoning,
+    confidenceScore: aiResponse.confidenceScore,
   };
 }
 
@@ -84,6 +87,7 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     matchedRules: { ruleName: string; isPrimary?: boolean }[];
     reasoning: string;
     noMatchFound: boolean;
+    confidenceScore?: number;
   };
   modelOptions: ReturnType<typeof getModel>;
 }> {
@@ -91,22 +95,23 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     email,
     emailAccount,
     rules,
+    // modelType is preserved for the multi-rule path; ignored in the single-rule escalation path
+    // TODO: expose as test override if needed in future
     modelType = "default",
     classificationFeedback,
   } = options;
 
-  const modelOptions = getModel(emailAccount.user, modelType);
-
-  const generateObject = createGenerateObject({
-    emailAccount,
-    label: "Choose rule",
-    modelOptions,
-    promptHardening: { trust: "untrusted", level: "full" },
-  });
-
   const hasCustomRules = rules.some((rule) => !rule.systemType);
 
   if (hasCustomRules && emailAccount.multiRuleSelectionEnabled) {
+    const modelOptions = getModel(emailAccount.user, modelType);
+    const generateObject = createGenerateObject({
+      emailAccount,
+      label: "Choose rule",
+      modelOptions,
+      promptHardening: { trust: "untrusted", level: "full" },
+    });
+
     const result = await getAiResponseMultiRule({
       email,
       emailAccount,
@@ -117,16 +122,52 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     });
 
     return { result, modelOptions };
-  } else {
-    return getAiResponseSingleRule({
-      email,
-      emailAccount,
-      rules,
-      modelOptions,
-      generateObject,
-      classificationFeedback,
-    });
   }
+
+  // Tier 2: Haiku (economy slot)
+  const economyModelOptions = getModel(emailAccount.user, "economy");
+  const economyGenerateObject = createGenerateObject({
+    emailAccount,
+    label: "Choose rule (economy)",
+    modelOptions: economyModelOptions,
+    promptHardening: { trust: "untrusted", level: "full" },
+  });
+
+  const { result: haikuResult } = await getAiResponseSingleRule({
+    email,
+    emailAccount,
+    rules,
+    modelOptions: economyModelOptions,
+    generateObject: economyGenerateObject,
+    classificationFeedback,
+  });
+
+  const shouldEscalate =
+    haikuResult.noMatchFound || (haikuResult.confidenceScore ?? 0) < 0.8;
+
+  if (!shouldEscalate) {
+    return { result: haikuResult, modelOptions: economyModelOptions };
+  }
+
+  // Tier 3: Sonnet (default slot) — only reached when Haiku is uncertain or finds no match
+  const defaultModelOptions = getModel(emailAccount.user, "default");
+  const defaultGenerateObject = createGenerateObject({
+    emailAccount,
+    label: "Choose rule (escalated)",
+    modelOptions: defaultModelOptions,
+    promptHardening: { trust: "untrusted", level: "full" },
+  });
+
+  const { result: sonnetResult } = await getAiResponseSingleRule({
+    email,
+    emailAccount,
+    rules,
+    modelOptions: defaultModelOptions,
+    generateObject: defaultGenerateObject,
+    classificationFeedback,
+  });
+
+  return { result: sonnetResult, modelOptions: defaultModelOptions };
 }
 
 async function getAiResponseSingleRule({
@@ -201,6 +242,13 @@ ${stringifyEmail(email, 500)}
       noMatchFound: z
         .boolean()
         .describe("True if no match was found, false otherwise"),
+      confidenceScore: z
+        .number()
+        .min(0)
+        .max(1)
+        .describe(
+          "Confidence level 0 to 1 for this classification. Use 1.0 for an exact, unambiguous match; use 0.5 or below if uncertain.",
+        ),
     }),
   });
 
@@ -214,6 +262,7 @@ ${stringifyEmail(email, 500)}
           : [],
       noMatchFound: aiResponse.object?.noMatchFound ?? !hasRuleName,
       reasoning: aiResponse.object?.reasoning,
+      confidenceScore: aiResponse.object?.confidenceScore,
     },
     modelOptions,
   };
@@ -348,6 +397,7 @@ function logAiChooseRuleResult<
     matchedRules: { ruleName: string; isPrimary?: boolean }[];
     reasoning: string;
     noMatchFound: boolean;
+    confidenceScore?: number;
   };
   logger: Logger;
   orderedRules: T[];
