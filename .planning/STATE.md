@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 7 (Classification Engine)
-Plan: 0 of TBD in current phase
-Status: Ready to plan Phase 3
-Last activity: 2026-04-27 — Phase 2 verified complete (all open questions answered; RECON.md finalized with live production data)
+Plan: 0 of 5 in current phase
+Status: Ready to execute Phase 3
+Last activity: 2026-04-27 — Phase 3 planned: 5 plans in 5 waves (research → migration → seeding → code → E2E verify)
 
 Progress: [██░░░░░░░░] 28% (2 of 7 phases complete)
 

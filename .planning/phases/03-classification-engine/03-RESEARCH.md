@@ -696,27 +696,15 @@ No new packages to install.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Haiku model name verification**
-   - What we know: RECON.md and CONTEXT.md suggest `claude-haiku-3-5` or `claude-haiku-3-5-20241022`
-   - What's unclear: Anthropic model API identifier format may have changed; `claude-haiku-4` may be available and more capable
-   - Recommendation: Check docs.anthropic.com/en/docs/about-claude/models before setting SSM var (Wave 0, Task 0-3)
+1. **Haiku model name verification** — RESOLVED: Delegated to 03-01 Task 1 (blocking human checkpoint: visit docs.anthropic.com/en/docs/about-claude/models, record exact API identifier before setting SSM).
 
-2. **`NEXT_PUBLIC_BYPASS_PREMIUM_CHECKS` in production SSM**
-   - What we know: `.env.example` sets it to `true`; the DIGEST action silently skips if the user lacks premium access
-   - What's unclear: Whether this var is currently set in production SSM
-   - Recommendation: Verify via `aws ssm get-parameter --name /inbox-zero/NEXT_PUBLIC_BYPASS_PREMIUM_CHECKS` before Wave 2
+2. **`NEXT_PUBLIC_BYPASS_PREMIUM_CHECKS` in production SSM** — RESOLVED: 03-01 Task 3 verifies and sets this before any seeding. Blocks Wave 2.
 
-3. **`getUserRulesPrompt()` with `instructions: null` for Greers List**
-   - What we know: `getUserRulesPrompt()` serializes `rule.instructions` directly. Greers List has no instructions.
-   - What's unclear: If `instructions` is null, the prompt template emits `<criteria>null</criteria>` which could confuse the AI.
-   - Recommendation: Filter Greers List from the AI candidate list in `findPotentialMatchingRules()` — since it's a static-only rule (`from` field set, no instructions), `evaluateRuleConditions()` will return `matched: true` immediately via `matchesStaticRule()` and it never reaches `potentialAiMatches`. This is already handled correctly by the existing logic.
+3. **`getUserRulesPrompt()` with `instructions: null` for Greers List** — RESOLVED: Already handled by existing logic. Greers List matches via `matchesStaticRule()` and never reaches `potentialAiMatches`. No change needed.
 
-4. **CLASS-07: "Explicit user rules as highest-priority tier"**
-   - What we know: `prepareRulesWithMetaRule()` currently processes rules in DB order. Phase 3 adds explicit priority ordering.
-   - What's unclear: Since all Phase 3 rules are "system-style" (created by seed script, not by a Rules UI), CLASS-07 may be partially deferred until Phase 5 (Rules Management UI creates actual user-defined rules).
-   - Recommendation: For Phase 3, ensure the rule query in the webhook handler orders user-created rules (systemType=null) before system rules. The 8 new canonical rules all have systemType=null, so they will run before conversation meta-rule.
+4. **CLASS-07: "Explicit user rules as highest-priority tier"** — RESOLVED: Phase 3 partially delivers CLASS-07. All 8 canonical rules have `systemType=null` and take priority over the conversation meta-rule in the AI candidate list. Full user-authored rule priority completes in Phase 5 (Rules Management UI). The conversation meta-rule exclusion guard in 03-04 Task 2 handles the ordering.
 
 ---
 

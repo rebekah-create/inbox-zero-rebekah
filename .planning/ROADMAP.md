@@ -70,7 +70,28 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. 2FA/OTP emails are auto-deleted after 24 hours
   5. Emails from greers@trueocean.com are labeled "Greers List" and archived without touching the inbox
   6. Explicit rules from the Rules UI are applied as the highest-priority tier before Haiku or Sonnet are called
-**Plans**: TBD
+**Plans**: 5 plans in 5 waves
+
+**Wave 1:**
+- [ ] 03-01-PLAN.md — Wave 0 pre-flight: SSM env vars, Anthropic credit balance, Haiku model name verification (CLASS-02, CLASS-08)
+
+**Wave 2** *(blocked on Wave 1)*:
+- [ ] 03-02-PLAN.md — Prisma migration: add ExecutedRule.confidenceScore + ai-choose-rule.test.ts RED stubs (CLASS-02, CLASS-03)
+
+**Wave 3** *(blocked on Wave 2)*:
+- [ ] 03-03-PLAN.md — Seed 8 canonical rules in production DB; delete 6 old content rules (CLASS-01, CLASS-04, CLASS-05, CLASS-06, CLASS-07)
+
+**Wave 4** *(blocked on Waves 2 + 3)*:
+- [ ] 03-04-PLAN.md — Two-call escalation, confidenceScore threading, conversation meta-rule guard, deploy (CLASS-01..CLASS-08)
+
+**Wave 5** *(blocked on Wave 4)*:
+- [ ] 03-05-PLAN.md — End-to-end production verification of all 8 CLASS requirements (all CLASS)
+
+**Cross-cutting constraints:**
+- `NEXT_PUBLIC_BYPASS_PREMIUM_CHECKS=true` must be set in SSM before any DIGEST actions are seeded or fired (03-01, 03-03)
+- All LLM calls must use `createGenerateObject()` with `promptHardening: { trust: "untrusted", level: "full" }` — never raw `generateObject()` (03-04)
+- Prisma migration (`confidenceScore Float?`) must be deployed before any code writes to `ExecutedRule.confidenceScore` (03-02 before 03-04)
+
 **UI hint**: yes
 
 ### Phase 4: Daily Digest
@@ -133,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Ops Fixes | 3/3 | Complete | 2026-04-27 |
 | 2. Inbox Zero Recon | 1/1 | Complete | 2026-04-27 |
-| 3. Classification Engine | 0/TBD | Not started | - |
+| 3. Classification Engine | 0/5 | Ready to execute | - |
 | 4. Daily Digest | 0/TBD | Not started | - |
 | 5. Rules Management UI | 0/TBD | Not started | - |
 | 6. Feedback System | 0/TBD | Not started | - |
