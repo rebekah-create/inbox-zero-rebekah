@@ -244,8 +244,6 @@ ${stringifyEmail(email, 500)}
         .describe("True if no match was found, false otherwise"),
       confidenceScore: z
         .number()
-        .min(0)
-        .max(1)
         .describe(
           "Confidence level 0 to 1 for this classification. Use 1.0 for an exact, unambiguous match; use 0.5 or below if uncertain.",
         ),
