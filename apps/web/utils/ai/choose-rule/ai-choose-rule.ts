@@ -142,8 +142,7 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     classificationFeedback,
   });
 
-  const shouldEscalate =
-    haikuResult.noMatchFound || (haikuResult.confidenceScore ?? 0) < 0.8;
+  const shouldEscalate = haikuResult.noMatchFound;
 
   if (!shouldEscalate) {
     return { result: haikuResult, modelOptions: economyModelOptions };
