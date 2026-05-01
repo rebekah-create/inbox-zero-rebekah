@@ -57,13 +57,13 @@ function makeFixtures() {
   };
 }
 
-describe("aiChooseRule — Haiku to Sonnet escalation (CLASS-02)", () => {
+describe("aiChooseRule — Haiku-only classification (CLASS-02)", () => {
   beforeEach(() => {
     generateObjectMock.mockReset();
     getModelMock.mockClear();
   });
 
-  it("Haiku finds a match (any confidence) -> no escalation, single economy call", async () => {
+  it("Haiku finds a match -> returns result, single economy call, no Sonnet", async () => {
     generateObjectMock.mockResolvedValueOnce({
       object: {
         reasoning: "match",
@@ -73,13 +73,14 @@ describe("aiChooseRule — Haiku to Sonnet escalation (CLASS-02)", () => {
       },
     });
     const fx = makeFixtures();
-    await aiChooseRule(fx);
+    const result = await aiChooseRule(fx);
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
     expect(getModelMock).toHaveBeenCalledWith(expect.anything(), "economy");
     expect(getModelMock).not.toHaveBeenCalledWith(expect.anything(), "default");
+    expect(result.rules[0].rule.name).toBe("Receipts");
   });
 
-  it("Haiku finds a match with low confidence (0.5) -> no escalation (confidence threshold removed)", async () => {
+  it("Haiku finds a match with low confidence -> still returns result, no Sonnet", async () => {
     generateObjectMock.mockResolvedValueOnce({
       object: {
         reasoning: "weak match",
@@ -94,51 +95,19 @@ describe("aiChooseRule — Haiku to Sonnet escalation (CLASS-02)", () => {
     expect(getModelMock).not.toHaveBeenCalledWith(expect.anything(), "default");
   });
 
-  it("Haiku noMatchFound=true -> escalation to Sonnet (two AI calls)", async () => {
-    generateObjectMock
-      .mockResolvedValueOnce({
-        object: {
-          reasoning: "no match",
-          ruleName: null,
-          noMatchFound: true,
-          confidenceScore: 0.3,
-        },
-      })
-      .mockResolvedValueOnce({
-        object: {
-          reasoning: "found it",
-          ruleName: "Receipts",
-          noMatchFound: false,
-          confidenceScore: 0.9,
-        },
-      });
-    const fx = makeFixtures();
-    await aiChooseRule(fx);
-    expect(generateObjectMock).toHaveBeenCalledTimes(2);
-    expect(getModelMock).toHaveBeenCalledWith(expect.anything(), "default");
-  });
-
-  it("both Haiku and Sonnet find no match -> returns empty rules", async () => {
-    generateObjectMock
-      .mockResolvedValueOnce({
-        object: {
-          reasoning: "no match",
-          ruleName: null,
-          noMatchFound: true,
-          confidenceScore: 0.2,
-        },
-      })
-      .mockResolvedValueOnce({
-        object: {
-          reasoning: "still no match",
-          ruleName: null,
-          noMatchFound: true,
-          confidenceScore: 0.1,
-        },
-      });
+  it("Haiku noMatchFound=true -> returns empty rules, single economy call, no Sonnet", async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        reasoning: "no match",
+        ruleName: null,
+        noMatchFound: true,
+        confidenceScore: 0.3,
+      },
+    });
     const fx = makeFixtures();
     const result = await aiChooseRule(fx);
-    expect(generateObjectMock).toHaveBeenCalledTimes(2);
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
+    expect(getModelMock).not.toHaveBeenCalledWith(expect.anything(), "default");
     expect(result.rules).toHaveLength(0);
   });
 });

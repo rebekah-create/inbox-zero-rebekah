@@ -124,7 +124,7 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     return { result, modelOptions };
   }
 
-  // Tier 2: Haiku (economy slot)
+  // Tier 2: Haiku (economy slot) — sole classifier, no Sonnet escalation
   const economyModelOptions = getModel(emailAccount.user, "economy");
   const economyGenerateObject = createGenerateObject({
     emailAccount,
@@ -142,31 +142,7 @@ async function getAiResponse(options: GetAiResponseOptions): Promise<{
     classificationFeedback,
   });
 
-  const shouldEscalate = haikuResult.noMatchFound;
-
-  if (!shouldEscalate) {
-    return { result: haikuResult, modelOptions: economyModelOptions };
-  }
-
-  // Tier 3: Sonnet (default slot) — only reached when Haiku is uncertain or finds no match
-  const defaultModelOptions = getModel(emailAccount.user, "default");
-  const defaultGenerateObject = createGenerateObject({
-    emailAccount,
-    label: "Choose rule (escalated)",
-    modelOptions: defaultModelOptions,
-    promptHardening: { trust: "untrusted", level: "full" },
-  });
-
-  const { result: sonnetResult } = await getAiResponseSingleRule({
-    email,
-    emailAccount,
-    rules,
-    modelOptions: defaultModelOptions,
-    generateObject: defaultGenerateObject,
-    classificationFeedback,
-  });
-
-  return { result: sonnetResult, modelOptions: defaultModelOptions };
+  return { result: haikuResult, modelOptions: economyModelOptions };
 }
 
 async function getAiResponseSingleRule({
