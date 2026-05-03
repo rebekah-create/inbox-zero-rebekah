@@ -296,6 +296,7 @@ async function sendSlackRuleNotificationWithContext({
   const rootMessageId =
     (await findSlackRootMessageId({
       executedActionId: context.id,
+      emailAccountId: context.executedRule.emailAccount.id,
       messagingChannelId: context.messagingChannel.id,
       threadId: context.executedRule.threadId,
     })) ?? null;
@@ -1740,10 +1741,12 @@ function getNotificationOpenLink(
 
 async function findSlackRootMessageId({
   executedActionId,
+  emailAccountId,
   messagingChannelId,
   threadId,
 }: {
   executedActionId: string;
+  emailAccountId: string;
   messagingChannelId: string;
   threadId: string;
 }) {
@@ -1753,6 +1756,7 @@ async function findSlackRootMessageId({
       messagingChannelId,
       messagingMessageId: { not: null },
       executedRule: {
+        emailAccountId,
         threadId,
       },
     },
