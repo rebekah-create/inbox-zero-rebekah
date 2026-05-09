@@ -226,7 +226,7 @@
     "dotenv-cli": "11.0.0",
     "emulate": "npm:@inbox-zero/emulate@0.4.5",
     "jsdom": "27.3.0",
-    "postcss": "8.5.6",
+    "postcss": "8.5.10",
     "serwist": "9.5.7",
     "tailwindcss": "3.4.17",
     "tsconfig": "workspace:*",
