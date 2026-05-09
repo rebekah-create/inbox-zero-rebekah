@@ -10,7 +10,7 @@
 # Memory requirement: ~3GB for webpack build + TypeScript checking
 # See: https://nextjs.org/docs/app/guides/memory-usage
 
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -94,7 +94,7 @@ RUN --mount=type=cache,target=/app/apps/web/.next/cache \
     pnpm --filter @inboxzero/worker deploy --legacy --prod /tmp/apps/worker
 
 # === Production image ===
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 
 WORKDIR /app
 
