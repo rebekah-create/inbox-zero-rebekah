@@ -227,7 +227,7 @@
     "emulate": "npm:@inbox-zero/emulate@0.4.5",
     "jsdom": "27.3.0",
     "postcss": "8.5.6",
-    "serwist": "9.5.7",
+    "serwist": "9.5.11",
     "tailwindcss": "3.4.17",
     "tsconfig": "workspace:*",
     "typescript": "6.0.3",
