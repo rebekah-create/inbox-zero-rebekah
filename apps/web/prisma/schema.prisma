@@ -210,6 +210,8 @@ model EmailAccount {
 
   @@index([userId])
   @@index([lastSummaryEmailAt])
+  @@index([watchEmailsSubscriptionId])
+  @@index([watchEmailsSubscriptionHistory(ops: JsonbPathOps)], type: Gin)
 }
 
 model Organization {
@@ -470,6 +472,7 @@ model Label {
 
   @@unique([gmailLabelId, emailAccountId])
   @@unique([name, emailAccountId])
+  @@index([emailAccountId])
 }
 
 model Rule {
@@ -520,6 +523,7 @@ model Rule {
   @@unique([id, emailAccountId])
   @@unique([name, emailAccountId])
   @@unique([emailAccountId, systemType])
+  @@index([emailAccountId, enabled])
 }
 
 model Action {
@@ -613,6 +617,8 @@ model ExecutedRule {
   @@index([emailAccountId, messageId])
   @@index([emailAccountId, status, createdAt])
   @@index([emailAccountId, createdAt])
+  @@index([emailAccountId, id])
+  @@index([ruleId])
 }
 
 model ExecutedAction {
@@ -653,6 +659,7 @@ model ExecutedAction {
   scheduledAction      ScheduledAction? // Reverse relation for delayed actions
 
   @@index([executedRuleId])
+  @@index([messagingChannelId, createdAt])
 }
 
 model ScheduledAction {
@@ -713,6 +720,7 @@ model Group {
   emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 
   @@unique([name, emailAccountId])
+  @@index([emailAccountId])
 }
 
 model GroupItem {
@@ -767,6 +775,7 @@ model Category {
   rules        Rule[]
 
   @@unique([name, emailAccountId])
+  @@index([emailAccountId])
 }
 
 // Represents a sender (`email`) that a user can unsubscribe from,
@@ -920,6 +929,7 @@ model CleanupThread {
   emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
+  @@index([emailAccountId])
 }
 
 model Knowledge {

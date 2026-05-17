@@ -14,6 +14,7 @@ import {
 } from "@/utils/drive/filing-notifications";
 import { sendFilingMessagingNotifications } from "@/utils/drive/filing-messaging-notifications";
 import { extractEmailAddress } from "@/utils/email";
+import { isCalendarInviteAttachment } from "@/utils/parse/calender-event";
 
 // ============================================================================
 // Types
@@ -337,10 +338,13 @@ export async function processAttachment({
  * Get all filable attachments from a message.
  * All attachment types are supported - text-extractable files (PDF, DOCX, TXT)
  * get full content analysis, while other types (images, spreadsheets, etc.)
- * are filed based on filename and email metadata.
+ * are filed based on filename and email metadata. Calendar invite artifacts are
+ * excluded because they describe the email event rather than a user document.
  */
 export function getFilableAttachments(message: ParsedMessage): Attachment[] {
-  return message.attachments || [];
+  return (message.attachments || []).filter(
+    (attachment) => !isCalendarInviteAttachment(attachment),
+  );
 }
 
 // ============================================================================
