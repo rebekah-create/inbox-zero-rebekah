@@ -4,6 +4,7 @@ import { stringifyEmail } from "@/utils/stringify-email";
 import { isDefined, type EmailForLLM } from "@/utils/types";
 import { getModel, type ModelType } from "@/utils/llms/model";
 import { createGenerateObject } from "@/utils/llms";
+import { Provider } from "@/utils/llms/config";
 import { getUserInfoPrompt, getUserRulesPrompt } from "@/utils/ai/helpers";
 import { sortRulesForAutomation } from "@/utils/rule/sort";
 import type { Logger } from "@/utils/logger";
@@ -202,28 +203,32 @@ Example response format:
 ${stringifyEmail(email, 500)}
 </email>${email.listUnsubscribe ? "\nNote: This email has a List-Unsubscribe header." : ""}`;
 
-  const aiResponse = await generateObject({
-    ...modelOptions,
-    system,
-    prompt,
-    schema: z.object({
-      reasoning: z
-        .string()
-        .describe("The reason you chose the rule. Keep it concise"),
-      ruleName: z
-        .string()
-        .nullable()
-        .describe("The exact name of the rule you want to apply"),
-      noMatchFound: z
-        .boolean()
-        .describe("True if no match was found, false otherwise"),
-      confidenceScore: z
-        .number()
-        .describe(
-          "Confidence level 0 to 1 for this classification. Use 1.0 for an exact, unambiguous match; use 0.5 or below if uncertain.",
-        ),
-    }),
+  const singleRuleSchema = z.object({
+    reasoning: z
+      .string()
+      .describe("The reason you chose the rule. Keep it concise"),
+    ruleName: z
+      .string()
+      .nullable()
+      .describe("The exact name of the rule you want to apply"),
+    noMatchFound: z
+      .boolean()
+      .describe("True if no match was found, false otherwise"),
+    confidenceScore: z
+      .number()
+      .describe(
+        "Confidence level 0 to 1 for this classification. Use 1.0 for an exact, unambiguous match; use 0.5 or below if uncertain.",
+      ),
   });
+
+  const aiResponse = await generateObject(
+    buildClassifierRequest({
+      modelOptions,
+      system,
+      prompt,
+      schema: singleRuleSchema,
+    }) as Parameters<typeof generateObject>[0],
+  );
 
   const hasRuleName = !!aiResponse.object?.ruleName;
 
@@ -320,33 +325,35 @@ Example response format (multiple rules):
 ${stringifyEmail(email, 500)}
 </email>${email.listUnsubscribe ? "\nNote: This email has a List-Unsubscribe header." : ""}`;
 
-  const aiResponse = await generateObject({
-    ...modelOptions,
-    system,
-    prompt,
-    schema: z.object({
-      matchedRules: z
-        .array(
-          z.object({
-            ruleName: z.string().describe("The exact name of the rule"),
-            isPrimary: z
-              .boolean()
-              .describe(
-                "True if the rule is the primary match, false otherwise",
-              ),
-          }),
-        )
-        .describe("Array of all matching rules"),
-      reasoning: z
-        .string()
-        .describe(
-          "The reasoning you used to choose the rules. Keep it concise",
-        ),
-      noMatchFound: z
-        .boolean()
-        .describe("True if no match was found, false otherwise"),
-    }),
+  const multiRuleSchema = z.object({
+    matchedRules: z
+      .array(
+        z.object({
+          ruleName: z.string().describe("The exact name of the rule"),
+          isPrimary: z
+            .boolean()
+            .describe(
+              "True if the rule is the primary match, false otherwise",
+            ),
+        }),
+      )
+      .describe("Array of all matching rules"),
+    reasoning: z
+      .string()
+      .describe("The reasoning you used to choose the rules. Keep it concise"),
+    noMatchFound: z
+      .boolean()
+      .describe("True if no match was found, false otherwise"),
   });
+
+  const aiResponse = await generateObject(
+    buildClassifierRequest({
+      modelOptions,
+      system,
+      prompt,
+      schema: multiRuleSchema,
+    }) as Parameters<typeof generateObject>[0],
+  );
 
   return {
     matchedRules: aiResponse.object.matchedRules || [],
@@ -441,4 +448,44 @@ User has manually classified emails from this sender into these rules:
 ${lines.join("\n")}
 These are hints from past user actions. Still evaluate the current email on its own merits.
 </classification_feedback>`;
+}
+
+function isAnthropicProvider(provider: string): boolean {
+  return provider === Provider.ANTHROPIC;
+}
+
+function buildClassifierRequest({
+  modelOptions,
+  system,
+  prompt,
+  schema,
+}: {
+  modelOptions: ReturnType<typeof getModel>;
+  system: string;
+  prompt: string;
+  schema: unknown;
+}) {
+  if (isAnthropicProvider(modelOptions.provider)) {
+    return {
+      ...modelOptions,
+      messages: [
+        {
+          role: "system" as const,
+          content: [
+            {
+              type: "text" as const,
+              text: system,
+              providerOptions: {
+                anthropic: { cacheControl: { type: "ephemeral" } },
+              },
+            },
+          ],
+        },
+        { role: "user" as const, content: prompt },
+      ],
+      schema,
+    };
+  }
+
+  return { ...modelOptions, system, prompt, schema };
 }
