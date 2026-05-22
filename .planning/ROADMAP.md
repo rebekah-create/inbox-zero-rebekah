@@ -24,6 +24,13 @@
 3. Cache is keyed per email-account, TTL bounded so Calendar API calls are well within Google's free quota
 4. On Calendar API failure with a stale cache present, the stale data is returned with a logged warning; with no cache present, an empty list is returned and downstream callers degrade gracefully
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-PLAN-01-types-and-pure-helpers.md — D-02 type contract + pure isExcluded/normalize/pastPrune helpers with full unit-test coverage
+- [ ] 08-PLAN-02-cache-and-read-path.md — Redis envelope cache + getUpcomingEvents single read path + integration tests
+- [ ] 08-PLAN-03-oauth-scope-verification.md — soft-verify live OAuth grant matches CALENDAR_SCOPES (Phase 9 readiness check)
+
 ### Phase 8.5: Prompt Caching for Classification
 
 **Goal:** Enable Anthropic prompt caching on the v1.0 Haiku classification prompt so the constant-prefix portion (system prompt, categories, user-info block, rules list) is cached, cutting input-token cost on the repetitive prefix to ~10% of uncached price. Phase 9's new extraction prompt then inherits the same caching pattern from day one.
