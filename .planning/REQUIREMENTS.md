@@ -55,6 +55,7 @@
 
 - [ ] **OPS-01** — Calendar API failures (rate limit, expired token, network) degrade gracefully — extraction skips, reconciliation skips, digest ships without agenda section, errors are logged with enough detail to debug
 - [ ] **OPS-02** — Token cost of the new extraction and reconciliation steps is measured and total AI spend stays within the existing AI budget (≤$10/mo additional total); if measurement shows otherwise, the pre-filter (REC-01) tightens or extraction payload trims before milestone close
+- [ ] **OPS-03** — Anthropic prompt caching is enabled on the constant-prefix portion of the v1.0 Haiku classification prompt (system prompt, categories, user-info block, rules list), the Anthropic Console shows non-zero `cache_read_input_tokens` within 24h of deploy, and the cut point is documented so Phase 9's extraction prompt inherits the pattern
 
 ---
 
@@ -81,6 +82,7 @@
 | CAL-01 | 8 |
 | CAL-02 | 8 |
 | CAL-03 | 8 |
+| OPS-03 | 8.5 |
 | REC-01 | 9 |
 | REC-02 | 9 |
 | REC-03 | 9 |

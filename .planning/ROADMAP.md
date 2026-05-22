@@ -24,6 +24,20 @@
 3. Cache is keyed per email-account, TTL bounded so Calendar API calls are well within Google's free quota
 4. On Calendar API failure with a stale cache present, the stale data is returned with a logged warning; with no cache present, an empty list is returned and downstream callers degrade gracefully
 
+### Phase 8.5: Prompt Caching for Classification
+
+**Goal:** Enable Anthropic prompt caching on the v1.0 Haiku classification prompt so the constant-prefix portion (system prompt, categories, user-info block, rules list) is cached, cutting input-token cost on the repetitive prefix to ~10% of uncached price. Phase 9's new extraction prompt then inherits the same caching pattern from day one.
+
+**Requirements:** OPS-03
+
+**Depends on:** None (the v1.0 classifier is the target; Phase 8 plumbing is independent)
+
+**Success criteria:**
+1. The constant-prefix portion of the classification system prompt is marked with `cache_control: { type: 'ephemeral' }` per Anthropic SDK conventions
+2. The Anthropic Console usage dashboard shows non-zero `cache_read_input_tokens` within 24h of deploy
+3. Average per-classification input cost (sum of `input_tokens` + `cache_read_input_tokens` × pricing) is measurably lower than the pre-deploy baseline
+4. Caching is documented (which prompt segments cache, which vary) so Phase 9's extraction prompt can mirror the pattern without re-discovering the cut point
+
 ### Phase 9: Email ↔ Calendar Reconciliation
 
 **Goal:** When an email references a date/time, extract the candidate event and reconcile it against the cached calendar. Result lands in one of three buckets — `MATCHED` (already on calendar), `CREATED` (new event added with `[AI]` tag + source-email back-ref), or `AMBIGUOUS` (near-match flagged for digest review). Strictly create-or-match — never modifies existing events.
@@ -63,12 +77,13 @@
 | Category | Reqs | Phase |
 |----------|------|-------|
 | CAL | CAL-01..03 | 8 |
+| OPS | OPS-03 | 8.5 |
 | REC | REC-01..06 | 9 |
 | EVT | EVT-01..05 | 9 |
 | DIG | DIG-01..05 | 10 |
 | OPS | OPS-01..02 | 9 |
 
-All 19 v1.1 requirements mapped to a phase.
+All 20 v1.1 requirements mapped to a phase.
 
 ---
 
