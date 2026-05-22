@@ -38,16 +38,52 @@ const KEY = crypto.scryptSync(
   32,
 );
 
+// SECURITY: keep in sync with apps/web/utils/encryption.ts (canonical impl).
+// This script is intentionally standalone (no imports from the bundle) because
+// it runs inside the production standalone container which doesn't ship source.
+// If the canonical impl gains a new key version, port the version dispatch
+// here too. Currently only v1 is supported — unknown versions throw.
+const SUPPORTED_VERSION = 1;
+const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
+const MIN_CIPHERTEXT_BYTES = IV_LENGTH + AUTH_TAG_LENGTH; // 32
+
 function decryptToken(value) {
   if (!value) return null;
   const versioned = value.match(/^v(\d+):([0-9a-f]+)$/i);
-  const hex = versioned ? versioned[2] : value;
-  if (!/^[0-9a-f]+$/i.test(hex)) return value; // plaintext passthrough
-  const buf = Buffer.from(hex, "hex");
-  if (buf.length < 32) return value;
-  const iv = buf.subarray(0, 16);
-  const tag = buf.subarray(16, 32);
-  const enc = buf.subarray(32);
+  if (versioned) {
+    const version = Number(versioned[1]);
+    if (version !== SUPPORTED_VERSION) {
+      // Canonical impl throws "Unknown encryption version" — match that.
+      throw new Error(`Unknown encryption version: v${version}`);
+    }
+    const buf = Buffer.from(versioned[2], "hex");
+    if (buf.length < MIN_CIPHERTEXT_BYTES) {
+      // Canonical impl throws "Ciphertext too short" — match that rather
+      // than silently returning the still-encrypted input.
+      throw new Error("Ciphertext too short");
+    }
+    return decryptBuffer(buf);
+  }
+  // Legacy unversioned path: try to decrypt as raw hex ciphertext; on failure
+  // warn and treat as plaintext (matches canonical tryLegacyDecrypt).
+  if (!/^[0-9a-f]+$/i.test(value)) return value; // plaintext passthrough
+  if (value.length < MIN_CIPHERTEXT_BYTES * 2) return value;
+  const buf = Buffer.from(value, "hex");
+  try {
+    return decryptBuffer(buf);
+  } catch (err) {
+    console.warn(
+      `Legacy decrypt attempt failed; treating as plaintext: ${err?.message ?? String(err)}`,
+    );
+    return value;
+  }
+}
+
+function decryptBuffer(buf) {
+  const iv = buf.subarray(0, IV_LENGTH);
+  const tag = buf.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+  const enc = buf.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
   const d = crypto.createDecipheriv("aes-256-gcm", KEY, iv);
   d.setAuthTag(tag);
   return Buffer.concat([d.update(enc), d.final()]).toString("utf8");
@@ -77,8 +113,17 @@ async function refresh(refreshToken) {
   return { ok: resp.ok, status: resp.status, body };
 }
 
-const accessToken = decryptToken(process.env.ENC_ACCESS);
-const refreshTokenVal = decryptToken(process.env.ENC_REFRESH);
+let accessToken;
+let refreshTokenVal;
+try {
+  accessToken = decryptToken(process.env.ENC_ACCESS);
+  refreshTokenVal = decryptToken(process.env.ENC_REFRESH);
+} catch (err) {
+  console.log(
+    `CALENDAR_SCOPE_VERDICT: FAIL — could not decrypt tokens: ${err?.message ?? String(err)}`,
+  );
+  process.exit(2);
+}
 
 if (!accessToken || !refreshTokenVal) {
   console.log("CALENDAR_SCOPE_VERDICT: FAIL — could not decrypt tokens");
