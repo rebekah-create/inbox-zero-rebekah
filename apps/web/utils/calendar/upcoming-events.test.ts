@@ -411,9 +411,7 @@ describe("getUpcomingEvents", () => {
   // Test 15
   it("Redis down on read falls through to live fetch", async () => {
     vi.mocked(redis.get).mockRejectedValue(new Error("Upstash 500"));
-    mockCalendarClient([
-      makeEvent({ id: "ok", selfResponse: "accepted" }),
-    ]);
+    mockCalendarClient([makeEvent({ id: "ok", selfResponse: "accepted" })]);
     const result = await getUpcomingEvents({
       emailAccountId: EMAIL_ACCOUNT_ID,
       now: NOW,
@@ -426,9 +424,7 @@ describe("getUpcomingEvents", () => {
   it("Redis down on write does not crash; result still returned", async () => {
     vi.mocked(redis.get).mockResolvedValue(null);
     vi.mocked(redis.set).mockRejectedValue(new Error("Upstash 500"));
-    mockCalendarClient([
-      makeEvent({ id: "ok", selfResponse: "accepted" }),
-    ]);
+    mockCalendarClient([makeEvent({ id: "ok", selfResponse: "accepted" })]);
     const result = await getUpcomingEvents({
       emailAccountId: EMAIL_ACCOUNT_ID,
       now: NOW,
