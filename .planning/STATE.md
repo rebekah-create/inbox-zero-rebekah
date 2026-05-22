@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.1
+milestone_name: — Calendar-Aware Email
+status: executing
+stopped_at: "v1.1 started — requirements being defined. Next: write REQUIREMENTS.md + ROADMAP.md, then `/gsd-plan-phase 8`."
+last_updated: "2026-05-22T21:24:28.111Z"
+last_activity: 2026-05-22 -- Phase 08 execution started
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -5,20 +21,21 @@
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Inbox only shows things that need Rebekah — everything else is already filed before she opens Gmail.
-**Current focus:** v1.1 Calendar-Aware Email — defining requirements.
+**Current focus:** Phase 08 — calendar-sync-foundation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-17 — Milestone v1.1 started
+Phase: 08 (calendar-sync-foundation) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 08
+Last activity: 2026-05-22 -- Phase 08 execution started
 
 Progress: v1.1 [          ] 0% (0 of N phases)
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed (v1.0): 1 tracked
 - Average duration: 45min
 - Total execution time: 45min

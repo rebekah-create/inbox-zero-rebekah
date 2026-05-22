@@ -24,7 +24,7 @@
 3. Cache is keyed per email-account, TTL bounded so Calendar API calls are well within Google's free quota
 4. On Calendar API failure with a stale cache present, the stale data is returned with a logged warning; with no cache present, an empty list is returned and downstream callers degrade gracefully
 
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 08-PLAN-01-types-and-pure-helpers.md — D-02 type contract + pure isExcluded/normalize/pastPrune helpers with full unit-test coverage
