@@ -76,22 +76,36 @@ export function normalize(
 
 /**
  * Drops events whose end is strictly before `now`. Boundary rule:
- * an event whose end equals `now` exactly is KEPT (predicate is `end < now`).
+ * keep events where `end >= now`; equivalently drop those where `end < now`.
+ * Boundary case `end === now` is KEPT.
  *
  * Timed events compare unix ms. All-day events compare the YYYY-MM-DD end
- * string lexicographically against `now.toISOString().slice(0,10)` — valid
- * because ISO date strings sort correctly. Note this uses UTC date; for the
- * single-user personal-logistics use case in v1.1 this is acceptable and
- * matches the documented contract.
+ * string lexicographically against today's date — valid because ISO date
+ * strings sort correctly.
+ *
+ * CALLER CONTRACT — TIMEZONE (WR-02):
+ *   `todayLocalDate` MUST be the YYYY-MM-DD string for the user's local
+ *   timezone, not UTC. If omitted, falls back to `now.toISOString().slice(0,10)`
+ *   (UTC), which is INCORRECT outside UTC and will silently drop an all-day
+ *   event one calendar day early when the user's local time has rolled over
+ *   but UTC has not (or vice versa). The current digest cron runs at 6-7am ET
+ *   where UTC === ET-date (after 4am UTC), so the legacy fallback is safe for
+ *   that single window only. Phase 9 reconciliation runs at arbitrary times
+ *   and MUST pass `todayLocalDate` explicitly.
+ *
+ *   To compute correctly for a tz:
+ *     new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now)
+ *   yields "YYYY-MM-DD" in that tz (en-CA locale gives ISO-format dates).
  *
  * See 08-RESEARCH.md Pitfall 6.
  */
 export function pastPrune(
   events: NormalizedCalendarEvent[],
   now: Date,
+  todayLocalDate?: string,
 ): NormalizedCalendarEvent[] {
   const nowMs = now.getTime();
-  const todayString = now.toISOString().slice(0, 10);
+  const todayString = todayLocalDate ?? now.toISOString().slice(0, 10);
   return events.filter((event) => {
     if (event.isAllDay) {
       return event.end >= todayString;

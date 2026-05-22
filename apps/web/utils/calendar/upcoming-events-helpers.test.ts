@@ -252,6 +252,28 @@ describe("pastPrune", () => {
     expect(pastPrune([e], now).map((x) => x.id)).toEqual(["future-allday"]);
   });
 
+  it("drops a timed event whose end is 1ms before now (IN-04)", () => {
+    const endIso = new Date(now.getTime() - 1).toISOString();
+    const e = timedEvent(endIso, "just-past");
+    expect(pastPrune([e], now)).toEqual([]);
+  });
+
+  it("keeps a timed event whose end is 1ms after now (IN-04)", () => {
+    const endIso = new Date(now.getTime() + 1).toISOString();
+    const e = timedEvent(endIso, "just-future");
+    expect(pastPrune([e], now).map((x) => x.id)).toEqual(["just-future"]);
+  });
+
+  it("respects explicit todayLocalDate for all-day comparison (WR-02)", () => {
+    // now is 2026-05-22T12:00:00-04:00 → UTC date is 2026-05-22.
+    // Pretend the user-local date is one day ahead: 2026-05-23.
+    const e = allDayEvent("2026-05-22", "today-in-utc");
+    // With the user-local date 2026-05-23, the 2026-05-22 all-day event is past.
+    expect(pastPrune([e], now, "2026-05-23")).toEqual([]);
+    // Without the override (UTC fallback), it remains kept.
+    expect(pastPrune([e], now).map((x) => x.id)).toEqual(["today-in-utc"]);
+  });
+
   it("handles a mix of past, present, and future events", () => {
     const events = [
       timedEvent("2026-05-22T10:00:00-04:00", "past-timed"),
