@@ -471,8 +471,17 @@ describe("getUpcomingEvents", () => {
     expect(serialized).not.toContain("SENSITIVE-LOG-MARKER");
   });
 
-  // Test 18 — thundering-herd tolerance
-  it("two concurrent cold reads result in at most 2 Google calls (D-09)", async () => {
+  // Test 18 — thundering-herd shape (WR-04: honest assertion)
+  //
+  // The current implementation has NO in-flight dedupe / single-flight: each
+  // concurrent cold read issues its own Google call. For the v1.1 personal-volume
+  // use case (one user, one webhook at a time) this is acceptable per 08-CONTEXT.
+  //
+  // This test asserts the current behavior exactly (N concurrent cold reads = N
+  // Google calls) so any future regression toward dedupe surfaces as a test
+  // failure that has to be explicitly acknowledged. If dedupe is later added,
+  // flip the assertion to .toBe(1).
+  it("two concurrent cold reads issue exactly 2 Google calls (no single-flight today; WR-04)", async () => {
     vi.mocked(redis.get).mockResolvedValue(null);
     const listMock = vi.fn(async () => {
       // Defer to next microtask so both invocations interleave.
@@ -496,6 +505,6 @@ describe("getUpcomingEvents", () => {
         logger,
       }),
     ]);
-    expect(listMock.mock.calls.length).toBeLessThanOrEqual(2);
+    expect(listMock.mock.calls.length).toBe(2);
   });
 });
