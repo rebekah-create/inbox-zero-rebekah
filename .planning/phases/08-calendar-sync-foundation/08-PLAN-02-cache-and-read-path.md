@@ -280,7 +280,7 @@ try {
     Use `createScopedLogger("calendar/upcoming-events")` as a fallback default logger only if the test exposes it — but the function signature requires logger to be passed in (no implicit logger creation inside the function; that's the caller's responsibility per existing fork convention).
 
     No retries inside (D-10). No webhooks (D-12). No token logging (D-11).
-  </action>
+  </behavior>
   <action>
     Create `apps/web/utils/calendar/upcoming-events.ts`. Import:
 
