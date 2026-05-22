@@ -77,15 +77,24 @@ export async function getUpcomingEvents({
       return envelope ? pastPrune(envelope.data, now) : [];
     }
 
-    const expiresAtMs =
-      connection.expiresAt instanceof Date
-        ? connection.expiresAt.getTime()
-        : (connection.expiresAt as number | null);
+    // WR-03: Narrow explicitly. Prisma returns Date for DateTime cols, but the
+    // schema could move to BigInt (a common token-expiry storage choice). An
+    // unchecked `as number | null` cast would pass a BigInt straight through
+    // to getCalendarClientWithRefresh and break arithmetic at the call site.
+    const rawExpiresAt: unknown = connection.expiresAt;
+    const expiresAtMs: number | null =
+      rawExpiresAt instanceof Date
+        ? rawExpiresAt.getTime()
+        : typeof rawExpiresAt === "number"
+          ? rawExpiresAt
+          : typeof rawExpiresAt === "bigint"
+            ? Number(rawExpiresAt)
+            : null;
 
     const client = await getCalendarClientWithRefresh({
       accessToken: connection.accessToken,
       refreshToken: connection.refreshToken,
-      expiresAt: expiresAtMs ?? null,
+      expiresAt: expiresAtMs,
       emailAccountId,
       connectionId: connection.id,
       logger,
