@@ -6,66 +6,55 @@
 
 ## Current Milestone: v1.1 — Calendar-Aware Email
 
-**Goal:** Make the AI email pipeline calendar-aware so upcoming events inform classification, schedulable emails become calendar events automatically, and the daily digest leads with today's agenda.
+**Goal:** Reconcile email against the user's Google Calendar — match existing events, create new ones, flag the ambiguous ones — and surface the result in the daily digest so the user is reassured nothing scheduled was missed and overlaps surface before they bite.
 
-**Phase numbering continues from v1.0:** v1.1 starts at Phase 8.
+**Use-case framing:** Personal life logistics (doctor appointments, kids' classes, camping reservations, birthdays) at ~1–3 events/day. The calendar is the thing being reconciled against, not a relevance filter for incoming mail. See REQUIREMENTS.md for the use-case framing in full.
 
-### Phase 8: Calendar Context for Classification
+**Phase numbering continues from v1.0:** v1.1 starts at Phase 8. Original Phase 10 (separate AI extraction phase) folded into Phase 9 — v1.1 is now 3 phases instead of 4.
 
-**Goal:** Pipe a per-account window of upcoming Google Calendar events into the Haiku/Sonnet classification prompt so the AI knows what's on the user's calendar and uses that to bias urgency.
+### Phase 8: Calendar Sync Foundation
 
-**Requirements:** CTX-01, CTX-02, CTX-03, CTX-04, OPS-02
+**Goal:** Fetch + Redis-cache the user's primary-calendar events (next 7 days, declined/tentative excluded) and expose a single read path that downstream phases consume. No prompt injection, no urgency bias — pure plumbing.
 
-**Success criteria:**
-1. Classifier receives next-7-days calendar events as structured context on every classification call
-2. Events declined or marked tentative are excluded from the context
-3. Per-account calendar cache (Redis or in-memory with TTL) keeps Calendar API calls ≤ a few per hour, not per email
-4. Emails about events within 24h bias toward Urgent; 1–7d toward Uncertain (visible in `ExecutedRule.reason`)
-5. Token cost of new context measured and total AI spend stays ≤ $10/mo
-
-### Phase 9: Auto-Create Events from ICS Invites
-
-**Goal:** When an incoming email carries an `.ics` invite or is recognized by `analyzeCalendarEvent`, write the event to Google Calendar with source-email back-reference and a clear `[AI]` tag.
-
-**Requirements:** EVT-01, EVT-03, EVT-04, EVT-05, EVT-06, OPS-01
-
-**Depends on:** Phase 8 (shares calendar client / OAuth)
+**Requirements:** CAL-01, CAL-02, CAL-03
 
 **Success criteria:**
-1. ICS-bearing emails create matching events on the primary calendar
-2. Events include source Gmail thread URL + message ID in description
-3. Events visibly tagged (`[AI]` summary prefix or distinct color) so the user can spot/delete AI-created entries
-4. Same email reprocessed (replays, history sync) does not duplicate events
-5. Calendar API failures log + do not block classification or digest delivery
+1. A single cache-aware read function returns normalized events for the next 7 days
+2. Declined and tentative events are excluded at fetch time and never enter the cache
+3. Cache is keyed per email-account, TTL bounded so Calendar API calls are well within Google's free quota
+4. On Calendar API failure with a stale cache present, the stale data is returned with a logged warning; with no cache present, an empty list is returned and downstream callers degrade gracefully
 
-### Phase 10: AI Appointment Extraction → Auto-Create
+### Phase 9: Email ↔ Calendar Reconciliation
 
-**Goal:** For emails without an attached invite (e.g., "Can we meet Tuesday 2pm at the office?"), use the LLM to extract title/start/end/location/attendees and auto-create the event on the primary calendar with the same tagging and dedupe behavior.
+**Goal:** When an email references a date/time, extract the candidate event and reconcile it against the cached calendar. Result lands in one of three buckets — `MATCHED` (already on calendar), `CREATED` (new event added with `[AI]` tag + source-email back-ref), or `AMBIGUOUS` (near-match flagged for digest review). Strictly create-or-match — never modifies existing events.
 
-**Requirements:** EVT-02
+**Requirements:** REC-01, REC-02, REC-03, REC-04, REC-05, REC-06, EVT-01, EVT-02, EVT-03, EVT-04, EVT-05, OPS-01, OPS-02
 
-**Depends on:** Phase 9 (reuses event-create + dedupe + tagging code path)
+**Depends on:** Phase 8 (consumes the cached event list)
 
 **Success criteria:**
-1. Plain-text appointment detection runs only on emails not already handled by Phase 9 (no double-creation)
-2. Extracted events include title, start/end time (resolved to user TZ), location when present, and any attendees mentioned
-3. Created events carry the same `[AI]` tag + source-email back-reference as Phase 9
-4. Extraction confidence is logged so accuracy can be audited from `ExecutedRule` records
+1. Cheap pre-filter (regex/keyword + .ics detection) gates expensive LLM extraction — LLM runs only on candidates
+2. Extraction produces title, start/end (user TZ), location, mentioned people from both `.ics` invites (via existing `analyzeCalendarEvent`) and plain-text bodies
+3. Every extraction outcome persists as a reconciliation record linked to source email + (when applicable) calendar event ID
+4. `MATCHED` never creates a new event; `CREATED` writes with `[AI]` tag + source email link in description; `AMBIGUOUS` writes no event
+5. Reprocessing the same email is idempotent — dedupe by message ID + event signature
+6. Calendar API or extraction failures log + do not block classification or digest delivery
+7. Token cost measured per call; total v1.1 AI spend projects ≤ $10/mo before phase close
 
-### Phase 11: Digest Calendar Enrichment
+### Phase 10: Digest Agenda + Reconciliation Outcomes
 
-**Goal:** Lead the 9am ET digest with a calendar agenda section — today + tomorrow morning — so the user opens the digest already oriented to the day.
+**Goal:** Lead the 9am ET digest with today + tomorrow's agenda so the user is oriented to the day, and render a one-line outcome for every reconciliation in the last 24h (`MATCHED` / `CREATED` / `AMBIGUOUS`).
 
 **Requirements:** DIG-01, DIG-02, DIG-03, DIG-04, DIG-05
 
-**Depends on:** Phase 8 (calendar client / caching) and Phase 9 or 10 (for DIG-05 "events auto-created in last 24h" content)
+**Depends on:** Phase 8 (event cache) and Phase 9 (reconciliation records)
 
 **Success criteria:**
-1. Digest opens with a Today section listing events from 9am ET through end-of-day ET
-2. Digest includes a Tomorrow section showing events 6am–noon next day
-3. Each item renders time/title/location/conflict indicator
-4. Empty days render a friendly fallback rather than a blank section
-5. Auto-created events from the last 24h are flagged with their source-email link
+1. Digest opens with a Today section (9am ET → midnight ET) and a Tomorrow morning section (6am–noon next day)
+2. Each agenda item renders time/title/location/overlap indicator
+3. Empty days render a friendly fallback rather than a blank section
+4. Each reconciliation in the last 24h renders one of three sentence shapes: "already on your calendar," "added to your calendar," "looks like it's about X — review"
+5. `CREATED` and `AMBIGUOUS` lines link to the source email
 
 ---
 
@@ -73,14 +62,13 @@
 
 | Category | Reqs | Phase |
 |----------|------|-------|
-| CTX | CTX-01..04 | 8 |
-| EVT | EVT-01, 03, 04, 05, 06 | 9 |
-| EVT | EVT-02 | 10 |
-| DIG | DIG-01..05 | 11 |
-| OPS | OPS-01 | 9 |
-| OPS | OPS-02 | 8 |
+| CAL | CAL-01..03 | 8 |
+| REC | REC-01..06 | 9 |
+| EVT | EVT-01..05 | 9 |
+| DIG | DIG-01..05 | 10 |
+| OPS | OPS-01..02 | 9 |
 
-All 15 v1.1 requirements mapped to a phase.
+All 19 v1.1 requirements mapped to a phase.
 
 ---
 
