@@ -9,6 +9,7 @@ import type {
   NormalizedCalendarEvent,
 } from "./upcoming-events-types";
 import {
+  hasStartAndEnd,
   isExcluded,
   normalize,
   pastPrune,
@@ -101,7 +102,7 @@ export async function getUpcomingEvents({
 
     const items = response.data.items ?? [];
     const normalized: NormalizedCalendarEvent[] = items
-      .filter((event) => !isExcluded(event))
+      .filter((event) => hasStartAndEnd(event) && !isExcluded(event))
       .map((event) => normalize(event));
 
     try {

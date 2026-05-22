@@ -1,6 +1,7 @@
 import type { calendar_v3 } from "@googleapis/calendar";
 import { describe, expect, it } from "vitest";
 import {
+  hasStartAndEnd,
   isExcluded,
   normalize,
   pastPrune,
@@ -147,6 +148,43 @@ describe("normalize", () => {
   it("returns empty attendees array when attendees missing", () => {
     const event = makeEvent({ attendees: undefined });
     expect(normalize(event).attendees).toEqual([]);
+  });
+
+  it("throws when event has neither dateTime nor date on start/end (WR-01)", () => {
+    const event = makeEvent({ start: {}, end: {} });
+    expect(() => normalize(event)).toThrow(/missing start or end/);
+  });
+
+  it("throws when event has start but no end (WR-01)", () => {
+    const event = makeEvent({
+      start: { dateTime: "2026-05-25T15:00:00-04:00" },
+      end: {},
+    });
+    expect(() => normalize(event)).toThrow(/missing start or end/);
+  });
+});
+
+describe("hasStartAndEnd", () => {
+  it("returns true for a timed event with both dateTime fields", () => {
+    expect(hasStartAndEnd(makeEvent())).toBe(true);
+  });
+
+  it("returns true for an all-day event with both date fields", () => {
+    const event = makeEvent({
+      start: { date: "2026-05-25" },
+      end: { date: "2026-05-26" },
+    });
+    expect(hasStartAndEnd(event)).toBe(true);
+  });
+
+  it("returns false when start has neither dateTime nor date", () => {
+    const event = makeEvent({ start: {}, end: { dateTime: "x" } });
+    expect(hasStartAndEnd(event)).toBe(false);
+  });
+
+  it("returns false when end is missing", () => {
+    const event = makeEvent({ end: {} });
+    expect(hasStartAndEnd(event)).toBe(false);
   });
 });
 
