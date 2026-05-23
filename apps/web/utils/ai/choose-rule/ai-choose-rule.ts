@@ -457,15 +457,10 @@ function buildClassifierSystem(
   return [
     {
       role: "system",
-      content: [
-        {
-          type: "text",
-          text: systemText,
-          providerOptions: {
-            anthropic: { cacheControl: { type: "ephemeral" } },
-          },
-        },
-      ],
+      content: systemText,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
     },
   ];
 }

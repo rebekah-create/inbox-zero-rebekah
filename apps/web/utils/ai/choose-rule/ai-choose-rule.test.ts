@@ -139,10 +139,9 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
     const callArg = generateObjectMock.mock.calls[0][0];
     expect(Array.isArray(callArg.system)).toBe(true);
     expect(callArg.system[0].role).toBe("system");
-    expect(callArg.system[0].content[0].type).toBe("text");
-    expect(typeof callArg.system[0].content[0].text).toBe("string");
-    expect(callArg.system[0].content[0].text.length).toBeGreaterThan(100);
-    expect(callArg.system[0].content[0].providerOptions).toEqual({
+    expect(typeof callArg.system[0].content).toBe("string");
+    expect(callArg.system[0].content.length).toBeGreaterThan(100);
+    expect(callArg.system[0].providerOptions).toEqual({
       anthropic: { cacheControl: { type: "ephemeral" } },
     });
     expect(typeof callArg.prompt).toBe("string");
@@ -190,7 +189,8 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
     const callArg = generateObjectMock.mock.calls[0][0];
     expect(Array.isArray(callArg.system)).toBe(true);
-    expect(callArg.system[0].content[0].providerOptions).toEqual({
+    expect(typeof callArg.system[0].content).toBe("string");
+    expect(callArg.system[0].providerOptions).toEqual({
       anthropic: { cacheControl: { type: "ephemeral" } },
     });
     expect(typeof callArg.prompt).toBe("string");
