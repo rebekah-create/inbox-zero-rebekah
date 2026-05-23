@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Calendar-Aware Email
 status: phase-complete
-stopped_at: "Phase 08 complete (verified, code review clean, prod scope verdict OK). Next: `/gsd-plan-phase 8.5` or `/gsd-plan-phase 9`."
-last_updated: "2026-05-22T23:30:00.000Z"
-last_activity: 2026-05-22 -- Phase 08 complete (3/3 plans, verified, reviewed)
+stopped_at: "Phase 08.5 complete (OPS-03 — Anthropic prompt caching enabled on classifier paths). Next: `/gsd-plan-phase 9` (reconciliation) or post-deploy Anthropic Console check (24h after merge)."
+last_updated: "2026-05-22T00:00:00.000Z"
+last_activity: 2026-05-22 -- Phase 08.5 plan 01 complete (Anthropic prompt caching, 4 commits)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 25
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -21,24 +21,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Inbox only shows things that need Rebekah — everything else is already filed before she opens Gmail.
-**Current focus:** Phase 08 complete; ready to plan Phase 8.5 (prompt caching) or Phase 9 (reconciliation)
+**Current focus:** Phase 08.5 complete (Anthropic prompt caching on classifier); ready to plan Phase 9 (reconciliation)
 
 ## Current Position
 
-Phase: 08 (calendar-sync-foundation) — COMPLETE
-Plan: 3 of 3
-Status: Phase 08 verified — ship-ready
-Last activity: 2026-05-22 -- Phase 08 complete (3/3 plans, verified, reviewed)
+Phase: 08.5 (prompt-caching-for-classification) — COMPLETE
+Plan: 1 of 1
+Status: Phase 08.5 ship-ready; post-deploy verification at console.anthropic.com pending (24h after merge)
+Last activity: 2026-05-22 -- Phase 08.5 plan 01 complete (Anthropic prompt caching)
 
-Progress: v1.1 [██        ] 25% (1 of 4 phases)
+Progress: v1.1 [█████     ] 50% (2 of 4 phases)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (v1.0): 1 tracked
-- Average duration: 45min
-- Total execution time: 45min
+- Total plans completed (v1.1): 4 tracked
+- Average duration: ~40min
+- Latest: 08.5-01 (Anthropic prompt caching) — ~25min
 
 *Updated after each plan completion*
 
@@ -58,6 +58,7 @@ v1.1-specific decisions:
 
 - Auto-create events from emails: always auto-create, user deletes if wrong (Gmail-style)
 - Google Calendar OAuth already connected for rebekah@trueocean.com — no Phase 0 connect step needed
+- Phase 08.5: single ephemeral cache breakpoint on full classifier system block; multi-breakpoint deferred. Provider-gated on `provider === 'anthropic'` only — anthropic-vertex/bedrock take non-Anthropic branch. Anthropic Console is source of truth for cache-hit metrics (no local telemetry plumbing in v1).
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ v1.1-specific decisions:
 
 ## Session Continuity
 
-Last session: 2026-05-17
-Stopped at: v1.1 started — requirements being defined. Next: write REQUIREMENTS.md + ROADMAP.md, then `/gsd-plan-phase 8`.
+Last session: 2026-05-22
+Stopped at: Phase 08.5 complete (Anthropic prompt caching on classifier paths). Next: `/gsd-plan-phase 9` (reconciliation) or post-deploy Anthropic Console verification (24h after merge — confirm `cache_read_input_tokens > 0`).
 Resume file: None
