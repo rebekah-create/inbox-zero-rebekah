@@ -207,6 +207,7 @@ model EmailAccount {
   filingFolders          FilingFolder[]
   apiKeys                ApiKey[]
   classificationFeedback ClassificationFeedback[]
+  reconciliationRecords  ReconciliationRecord[]
 
   @@index([userId])
   @@index([lastSummaryEmailAt])
@@ -892,6 +893,45 @@ model ThreadTracker {
   @@index([emailAccountId, resolved, sentAt, type])
   @@index([emailAccountId, type, resolved, sentAt])
   @@index([emailAccountId, type, resolved, followUpAppliedAt, sentAt])
+}
+
+model ReconciliationRecord {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  emailAccountId String
+  emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+
+  messageId String
+  threadId  String
+
+  outcome             ReconciliationOutcome
+  googleEventId       String?
+  googleEventHtmlLink String?
+
+  extractedTitle      String
+  extractedStart      DateTime
+  extractedEnd        DateTime?
+  extractedLocation   String?
+  extractedAttendees  String[]
+  extractedIsAllDay   Boolean? @default(false)
+  candidateConfidence Float
+  eventSignature      String
+
+  errorMessage String?
+
+  @@unique([emailAccountId, messageId, eventSignature])
+  @@index([emailAccountId, createdAt(sort: Desc)])
+  @@index([emailAccountId, outcome])
+}
+
+enum ReconciliationOutcome {
+  MATCHED
+  CREATED
+  AMBIGUOUS
+  PENDING
+  FAILED
 }
 
 model CleanupJob {
