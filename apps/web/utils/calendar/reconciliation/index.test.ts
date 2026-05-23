@@ -57,10 +57,11 @@ function makeLogger(): Logger {
 function makeMessage(
   overrides: Partial<ParsedMessage> = {},
 ): ParsedMessage {
+  const subject = (overrides.subject as string | undefined) ?? "Test subject";
   return {
     id: "msg_1",
     threadId: "thr_1",
-    subject: "Test subject",
+    subject,
     snippet: "",
     date: new Date().toISOString(),
     historyId: "h1",
@@ -68,7 +69,7 @@ function makeMessage(
     headers: {
       from: "sender@example.com",
       to: "rebekah@trueocean.com",
-      subject: "Test subject",
+      subject,
       date: new Date().toISOString(),
     },
     textPlain: "plain body",
