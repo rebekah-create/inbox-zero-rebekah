@@ -332,9 +332,7 @@ ${stringifyEmail(email, 500)}
           ruleName: z.string().describe("The exact name of the rule"),
           isPrimary: z
             .boolean()
-            .describe(
-              "True if the rule is the primary match, false otherwise",
-            ),
+            .describe("True if the rule is the primary match, false otherwise"),
         }),
       )
       .describe("Array of all matching rules"),
