@@ -281,7 +281,9 @@ describe("pastPrune", () => {
       allDayEvent("2026-05-21", "past-allday"),
       allDayEvent("2026-05-25", "future-allday"),
     ];
-    const kept = pastPrune(events, now).map((e) => e.id).sort();
+    const kept = pastPrune(events, now)
+      .map((e) => e.id)
+      .sort();
     expect(kept).toEqual(["future-allday", "future-timed"]);
   });
 });

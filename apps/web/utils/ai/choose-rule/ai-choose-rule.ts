@@ -221,14 +221,12 @@ ${stringifyEmail(email, 500)}
       ),
   });
 
-  const aiResponse = await generateObject(
-    buildClassifierRequest({
-      modelOptions,
-      system,
-      prompt,
-      schema: singleRuleSchema,
-    }),
-  );
+  const aiResponse = await generateObject({
+    ...modelOptions,
+    system: buildClassifierSystem(system, modelOptions.provider),
+    prompt,
+    schema: singleRuleSchema,
+  });
 
   const hasRuleName = !!aiResponse.object?.ruleName;
 
@@ -344,14 +342,12 @@ ${stringifyEmail(email, 500)}
       .describe("True if no match was found, false otherwise"),
   });
 
-  const aiResponse = await generateObject(
-    buildClassifierRequest({
-      modelOptions,
-      system,
-      prompt,
-      schema: multiRuleSchema,
-    }),
-  );
+  const aiResponse = await generateObject({
+    ...modelOptions,
+    system: buildClassifierSystem(system, modelOptions.provider),
+    prompt,
+    schema: multiRuleSchema,
+  });
 
   return {
     matchedRules: aiResponse.object.matchedRules || [],
@@ -452,38 +448,20 @@ function isAnthropicProvider(provider: string): boolean {
   return provider === Provider.ANTHROPIC;
 }
 
-function buildClassifierRequest<Schema>({
-  modelOptions,
-  system,
-  prompt,
-  schema,
-}: {
-  modelOptions: ReturnType<typeof getModel>;
-  system: string;
-  prompt: string;
-  schema: Schema;
-}) {
-  if (isAnthropicProvider(modelOptions.provider)) {
-    return {
-      ...modelOptions,
-      messages: [
+function buildClassifierSystem(systemText: string, provider: string) {
+  if (!isAnthropicProvider(provider)) return systemText;
+  return [
+    {
+      role: "system" as const,
+      content: [
         {
-          role: "system" as const,
-          content: [
-            {
-              type: "text" as const,
-              text: system,
-              providerOptions: {
-                anthropic: { cacheControl: { type: "ephemeral" } },
-              },
-            },
-          ],
+          type: "text" as const,
+          text: systemText,
+          providerOptions: {
+            anthropic: { cacheControl: { type: "ephemeral" } },
+          },
         },
-        { role: "user" as const, content: prompt },
       ],
-      schema,
-    };
-  }
-
-  return { ...modelOptions, system, prompt, schema };
+    },
+  ];
 }
