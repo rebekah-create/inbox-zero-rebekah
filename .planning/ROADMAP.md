@@ -29,7 +29,7 @@
 Plans:
 - [ ] 08-PLAN-01-types-and-pure-helpers.md — D-02 type contract + pure isExcluded/normalize/pastPrune helpers with full unit-test coverage
 - [ ] 08-PLAN-02-cache-and-read-path.md — Redis envelope cache + getUpcomingEvents single read path + integration tests
-- [ ] 08-PLAN-03-oauth-scope-verification.md — soft-verify live OAuth grant matches CALENDAR_SCOPES (Phase 9 readiness check)
+- [x] 08-PLAN-03-oauth-scope-verification.md — soft-verify live OAuth grant matches CALENDAR_SCOPES (Phase 9 readiness check) (completed 2026-05-23)
 
 ### Phase 8.5: Prompt Caching for Classification
 
@@ -62,18 +62,18 @@ Plans:
 6. Calendar API or extraction failures log + do not block classification or digest delivery
 7. Token cost measured per call; total v1.1 AI spend projects ≤ $10/mo before phase close
 
-**Plans:** 9 plans
+**Plans:** 9/9 plans complete
 
 Plans:
-- [ ] 09-01-PLAN.md — Add ReconciliationRecord Prisma model + migration
-- [ ] 09-02-PLAN.md — Pure helpers: titleSimilarity (Dice), eventSignature, decideOutcome decision tree
-- [ ] 09-03-PLAN.md — Haiku extraction call (cached system prompt + Zod schema + .ics adapter)
-- [ ] 09-04-PLAN.md — Prisma persistence + P2002 idempotency catch + stale-PENDING sweep
-- [ ] 09-05-PLAN.md — Google Calendar events.insert wrapper with [AI] prefix + source-email back-ref
-- [ ] 09-06-PLAN.md — reconcileMessage orchestrator (D-12 sequence, failure-isolation)
-- [ ] 09-07-PLAN.md — Wire reconcileMessage into process-history-item.ts after() block
-- [ ] 09-08-PLAN.md — Labeled fixture corpus (curation only — fixtures consumed by 09-09)
-- [ ] 09-09-PLAN.md — RUN_AI_TESTS extraction eval + cost-projection (real saveAiUsage capture, OPS-02)
+- [x] 09-01-PLAN.md — Add ReconciliationRecord Prisma model + migration
+- [x] 09-02-PLAN.md — Pure helpers: titleSimilarity (Dice), eventSignature, decideOutcome decision tree
+- [x] 09-03-PLAN.md — Haiku extraction call (cached system prompt + Zod schema + .ics adapter)
+- [x] 09-04-PLAN.md — Prisma persistence + P2002 idempotency catch + stale-PENDING sweep
+- [x] 09-05-PLAN.md — Google Calendar events.insert wrapper with [AI] prefix + source-email back-ref
+- [x] 09-06-PLAN.md — reconcileMessage orchestrator (D-12 sequence, failure-isolation)
+- [x] 09-07-PLAN.md — Wire reconcileMessage into process-history-item.ts after() block
+- [x] 09-08-PLAN.md — Labeled fixture corpus (curation only — fixtures consumed by 09-09)
+- [x] 09-09-PLAN.md — RUN_AI_TESTS extraction eval + cost-projection (real saveAiUsage capture, OPS-02)
 
 ### Phase 10: Digest Agenda + Reconciliation Outcomes
 

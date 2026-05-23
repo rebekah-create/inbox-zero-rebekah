@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Calendar-Aware Email
-status: verifying
-stopped_at: Phase 9 context gathered
-last_updated: "2026-05-23T02:37:12.904Z"
-last_activity: 2026-05-22 -- Phase 08.5 plan 01 complete (Anthropic prompt caching)
+status: executing
+last_updated: "2026-05-23T15:41:43.354Z"
+last_activity: 2026-05-23 -- Phase 09 execution started
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
+  completed_phases: 2
+  total_plans: 13
   completed_plans: 4
-  percent: 100
+  percent: 31
 ---
 
 # Project State
@@ -21,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Inbox only shows things that need Rebekah — everything else is already filed before she opens Gmail.
-**Current focus:** Phase 08.5 complete (Anthropic prompt caching on classifier); ready to plan Phase 9 (reconciliation)
+**Current focus:** Phase 09 — email-calendar-reconciliation
 
 ## Current Position
 
-Phase: 08.5 (prompt-caching-for-classification) — COMPLETE
-Plan: 1 of 1
-Status: Phase 08.5 ship-ready; post-deploy verification at console.anthropic.com pending (24h after merge)
-Last activity: 2026-05-22 -- Phase 08.5 plan 01 complete (Anthropic prompt caching)
+Phase: 09 (email-calendar-reconciliation) — EXECUTING
+Plan: 1 of 9
+Status: Executing Phase 09
+Last activity: 2026-05-23 -- Phase 09 execution started
 
 Progress: v1.1 [█████     ] 50% (2 of 4 phases)
 
