@@ -22,35 +22,47 @@ The classifier prompt in `ai-choose-rule.ts` uses Anthropic prompt caching to dr
 | User-info block (`getUserInfoPrompt`) | `system` string | YES — cached |
 | Per-email body / subject / from / List-Unsubscribe note | `prompt` string → first user message | NO — varies per email |
 
-### Cut point: one ephemeral marker on the trailing system block
+### Cut point: one ephemeral marker on the system message
 
-The full `system` text is sent as a single text content block with `providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } }`. The per-email `prompt` becomes the first `user` message (no cache marker). One breakpoint is sufficient for v1; multi-breakpoint caching (e.g., separating instructions from rules list) is a Phase 9+ optimization only if measurements justify it.
+The full `system` text is sent as a single `SystemModelMessage` with `providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } }` at the **message level** (not on a content block). The per-email `prompt` stays as a plain string parameter — same shape as the non-Anthropic branch, only `system` varies. One breakpoint is sufficient for v1; multi-breakpoint caching (e.g., separating instructions from rules list) is a Phase 9+ optimization only if measurements justify it.
 
 ### AI SDK pattern (mirror in Phase 9 extraction)
 
 ```ts
-const result = await generateObject({
-  ...modelOptions,
-  messages: [
+import type { SystemModelMessage } from "ai";
+
+function buildClassifierSystem(
+  systemText: string,
+  provider: string,
+): string | SystemModelMessage[] {
+  if (provider !== Provider.ANTHROPIC) return systemText;
+  return [
     {
       role: "system",
-      content: [
-        {
-          type: "text",
-          text: systemText,
-          providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
-        },
-      ],
+      content: systemText,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
     },
-    { role: "user", content: prompt },
-  ],
+  ];
+}
+
+const result = await generateObject({
+  ...modelOptions,
+  system: buildClassifierSystem(systemText, modelOptions.provider),
+  prompt,
   schema,
 });
 ```
 
-When passing `messages` to `generateObject`, do NOT also pass top-level `system` or `prompt` — the AI SDK throws on the combination. The `createGenerateObject` wrapper in `apps/web/utils/llms/index.ts` handles this correctly: it only injects `system: applyPromptHardeningToSystem(...)` when the caller passed `system` as a string, otherwise it writes `system: undefined` and the `messages` array is the source of truth.
+**Why this shape (and not the `messages` array variant the Anthropic docs show):**
 
-**Caveat on prompt hardening:** `applyPromptHardeningToSystem` is bypassed on the Anthropic path because we no longer send `system` as a string. This is acceptable for the classifier prompts (Phase 8.5 CONTEXT D-02 explicitly accepts this). If Phase 9's extraction prompt or any future cached prompt needs prompt hardening, fold the hardened text into the cached `text` field before constructing the messages array.
+- `SystemModelMessage.content` is typed as `string` in AI SDK v6, NOT `TextPart[]`. You cannot put `providerOptions` on a system-message content block — the cache marker must live on the message itself.
+- Only `UserModelMessage.content` accepts `TextPart[]` with per-block `providerOptions`. The Anthropic docs' user-message-with-content-array example does work, but for our classifier the natural cut is system-vs-prompt, so the SystemModelMessage path is cleaner.
+- `system` accepts `string | SystemModelMessage | SystemModelMessage[]`, so swapping in `SystemModelMessage[]` for the Anthropic branch requires no other call-site changes (`prompt` stays string, `schema` stays the same — generic inference preserved).
+- Annotate the helper return as `string | SystemModelMessage[]` explicitly — without it, TS widens `cacheControl: { type: "ephemeral" }` to `{ type: string }` and the union won't satisfy the `system` parameter type. (Burned 4 CI rounds in 8.5 discovering this.)
+
+**Prompt hardening still applies:** `createGenerateObject` in `apps/web/utils/llms/index.ts` only hardens when `typeof options.system === 'string'`. On the Anthropic path we pass `system: SystemModelMessage[]` so hardening is skipped — acceptable for the classifier (Phase 8.5 CONTEXT D-02). If Phase 9's extraction or any future cached prompt needs hardening, fold `applyPromptHardeningToSystem(systemText, promptHardening)` into the `content` field before wrapping in the message array.
 
 ### Provider gate
 
