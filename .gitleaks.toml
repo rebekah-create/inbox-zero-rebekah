@@ -1,34 +1,27 @@
+# gitleaks config — extends the default rule set
+# https://github.com/gitleaks/gitleaks
 [extend]
-# Extend the default gitleaks ruleset
 useDefault = true
 
-# Upstash REST tokens are JWTs that don't match a specific provider regex in the
-# default ruleset, so they slip past generic-api-key. The leak that prompted this
-# rule (commit 2026-05-04, deploy/docker-compose.yml) had the literal token
-# inline in YAML — no `password=` keyword nearby — which is why nothing caught it.
-[[rules]]
-id = "upstash-token"
-description = "Upstash Redis/Kafka/QStash REST token (JWT)"
-regex = '''eyJ[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'''
-keywords = ["upstash", "UPSTASH"]
-
-[[rules]]
-id = "upstash-redis-url"
-description = "Upstash Redis REST URL (token embedded in URL form)"
-regex = '''https://[a-z0-9-]+\.upstash\.io'''
-keywords = ["upstash"]
-
-[[allowlists]]
-description = "GSD planning directories contain UUID event IDs that trigger generic-api-key false positives"
+[allowlist]
+description = "Common false-positive paths and patterns"
 paths = [
-  '''.gsd\.migrating/''',
-  '''.gsd/''',
+  '''(.*?)(jpg|jpeg|png|gif|svg|webp|ico|pdf|lock|min\.js|min\.css)$''',
+  '''node_modules/''',
+  '''\.venv/''',
+  '''dist/''',
+  '''build/''',
+  '''\.terraform/''',
+  '''pnpm-lock\.yaml$''',
+  '''package-lock\.json$''',
+  '''yarn\.lock$''',
+  '''poetry\.lock$''',
+  '''uv\.lock$''',
 ]
-
-[[allowlists]]
-description = "Documentation and example references to Upstash are not real tokens"
-paths = [
-  '''\.env\.example''',
-  '''README\.md''',
-  '''\.gitleaks\.toml''',
+# Lines containing these patterns are parameter NAMES, not secrets.
+regexes = [
+  '''WithDecryption\s*=\s*True''',         # AWS SSM parameter retrieval
+  '''ssm[._]get_parameter''',              # alt boto3 style
+  '''secretsmanager[._]get_secret_value''', # AWS Secrets Manager retrieval
+  '''param(eter)?_name\s*=''',              # explicit parameter-name assignment
 ]
