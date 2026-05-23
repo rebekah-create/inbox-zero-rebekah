@@ -2,7 +2,7 @@
 phase: 9
 slug: email-calendar-reconciliation
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-05-22
 ---
@@ -41,9 +41,29 @@ created: 2026-05-22
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| _to-be-populated-by-planner_ |  |  |  |  |  |  |  |  | ⬜ pending |
+| 09-01-T1 | 09-01 | 1 | REC-04, REC-05 | — | Doc-only: locks migration approach | doc | `echo` (no-op) | ✅ | ⬜ pending |
+| 09-01-T2 | 09-01 | 1 | REC-04, REC-05 | T-09-07 | Schema declares ReconciliationRecord + D-14 unique | schema | `grep -c "model ReconciliationRecord" apps/web/prisma/schema.prisma` + `pnpm --filter inbox-zero-ai exec prisma generate` | ❌ W0 | ⬜ pending |
+| 09-01-T2b | 09-01 | 1 | REC-04 | — | extractedIsAllDay revision column present (so 09-06 stale-PENDING rehydration reads the persisted LLM flag instead of guessing) | schema | `grep -c "extractedIsAllDay" apps/web/prisma/schema.prisma` (expect ≥ 1) + `grep -c "extractedIsAllDay" apps/web/prisma/migrations/*_add_reconciliation_record/migration.sql` (expect ≥ 1) | ❌ W0 | ⬜ pending |
+| 09-01-T3 | 09-01 | 1 | REC-04, REC-05 | T-09-07 | Forward migration SQL created with FK CASCADE + unique index | migration | `grep -c "CREATE TABLE \"ReconciliationRecord\"" apps/web/prisma/migrations/*_add_reconciliation_record/migration.sql` | ❌ W0 | ⬜ pending |
+| 09-02-T1 | 09-02 | 1 | REC-03 (Dice) | — | Pure titleSimilarity Dice on whitespace bigrams | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/dice --run` | ❌ W0 | ⬜ pending |
+| 09-02-T2 | 09-02 | 1 | REC-05 | T-09-07 | eventSignature deterministic hash | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/signature --run` | ❌ W0 | ⬜ pending |
+| 09-02-T3 | 09-02 | 1 | REC-03, REC-06 | — | decideOutcome decision tree (D-08, D-23) | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/match --run` | ❌ W0 | ⬜ pending |
+| 09-03-T1 | 09-03 | 2 | REC-01, REC-02 | T-09-01 | SYSTEM_PROMPT_TEMPLATE + buildExtractionSystem cache shape | unit/grep | `grep -B5 "cacheControl" extract-prompt.ts \| grep -c 'type: "text"'` (expect 0) + node sibling-check | ❌ W0 | ⬜ pending |
+| 09-03-T2 | 09-03 | 2 | REC-02, OPS-02 | T-09-01, T-09-04 | candidateEventSchema + extractCandidateEvent + label="Reconciliation extract" | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/extract --run` | ❌ W0 | ⬜ pending |
+| 09-03-T3 | 09-03 | 2 | EVT-01, REC-01 | T-09-02 | extractFromIcs LLM-free | unit/grep | `cd apps/web && pnpm test -- utils/calendar/reconciliation/ics-path --run` + grep gate for no LLM imports | ❌ W0 | ⬜ pending |
+| 09-04-T1 | 09-04 | 2 | REC-04, REC-05 | T-09-05, T-09-07 | persist.ts P2002 catch via isDuplicateError + PII-safe logging | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/persist --run` | ❌ W0 | ⬜ pending |
+| 09-05-T1 | 09-05 | 2 | EVT-03, EVT-04 | — | createCalendarEvent with [AI] prefix + source-email back-ref | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/create-event --run` | ❌ W0 | ⬜ pending |
+| 09-06-T1 | 09-06 | 3 | REC-01 | — | matchesKeywordBackstop pure helper (D-02) | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/index --run -t matchesKeywordBackstop` | ❌ W0 | ⬜ pending |
+| 09-06-T2 | 09-06 | 3 | REC-01, REC-02, REC-03, REC-05, REC-06, EVT-05, OPS-01 | T-09-04, T-09-05, T-09-07 | reconcileMessage D-12 sequence + stale-PENDING reuse skips Haiku + no rethrow | unit | `cd apps/web && pnpm test -- utils/calendar/reconciliation/index --run` + grep `throw` count=0 | ❌ W0 | ⬜ pending |
+| 09-07-T1 | 09-07 | 4 | OPS-01, EVT-05 | — | Pre-edit verification of process-history-item.ts integration site | checkpoint | (human verify) | ✅ | ⬜ pending |
+| 09-07-T2 | 09-07 | 4 | OPS-01, EVT-05, REC-01 | T-09-05 | Insert new after() block with reconcileMessage call | grep | `grep -c "reconcile-message" apps/web/utils/webhook/process-history-item.ts` (expect 1) + after() count >= 3 | ✅ | ⬜ pending |
+| 09-07-T3 | 09-07 | 4 | OPS-01, EVT-05 | — | reconciliation invocation + failure-isolation tests (runRules / handleOutboundMessage) | unit | `cd apps/web && pnpm test -- utils/webhook/process-history-item --run` | ✅ | ⬜ pending |
+| 09-08-T1 | 09-08 | 4 | OPS-02 | T-09-01 | User-curated fixture corpus | checkpoint | (human action) | ✅ | ⬜ pending |
+| 09-08-T2 | 09-08 | 4 | OPS-02 | T-09-01 | Fixture JSON files conform to AI-SPEC §5 shape + isAllDay present on labeled | shape | `ls apps/web/__tests__/fixtures/reconciliation/labeled/*.json` + node isAllDay check | ❌ W0 | ⬜ pending |
+| 09-09-T1 | 09-09 | 5 | OPS-02 | T-09-01 | extract.ai.test.ts gated by RUN_AI_TESTS | manual-AI | `cd apps/web && pnpm test -- utils/calendar/reconciliation/extract.ai --run` (expect 0 tests gated) + manual `RUN_AI_TESTS=true pnpm test-ai` | ❌ W0 | ⬜ pending |
+| 09-09-T2 | 09-09 | 5 | OPS-02 | T-09-04 | cost-projection.test.ts with real saveAiUsage spy capture (approach a LOCKED) | manual-AI | `cd apps/web && pnpm test -- utils/calendar/reconciliation/cost-projection --run` (gated) + grep tautology=0 + manual AI run | ❌ W0 | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky · File Exists: ✅ exists · ❌ W0 = executor creates*
 
 ---
 

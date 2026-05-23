@@ -62,7 +62,7 @@ Plans:
 6. Calendar API or extraction failures log + do not block classification or digest delivery
 7. Token cost measured per call; total v1.1 AI spend projects ≤ $10/mo before phase close
 
-**Plans:** 8 plans
+**Plans:** 9 plans
 
 Plans:
 - [ ] 09-01-PLAN.md — Add ReconciliationRecord Prisma model + migration
@@ -72,7 +72,8 @@ Plans:
 - [ ] 09-05-PLAN.md — Google Calendar events.insert wrapper with [AI] prefix + source-email back-ref
 - [ ] 09-06-PLAN.md — reconcileMessage orchestrator (D-12 sequence, failure-isolation)
 - [ ] 09-07-PLAN.md — Wire reconcileMessage into process-history-item.ts after() block
-- [ ] 09-08-PLAN.md — Labeled fixture corpus + RUN_AI_TESTS extraction eval + cost projection
+- [ ] 09-08-PLAN.md — Labeled fixture corpus (curation only — fixtures consumed by 09-09)
+- [ ] 09-09-PLAN.md — RUN_AI_TESTS extraction eval + cost-projection (real saveAiUsage capture, OPS-02)
 
 ### Phase 10: Digest Agenda + Reconciliation Outcomes
 
