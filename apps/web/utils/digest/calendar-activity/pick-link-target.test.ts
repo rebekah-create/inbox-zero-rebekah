@@ -41,7 +41,8 @@ describe("pickLinkTarget — D-13 link selection", () => {
   it("always returns Gmail thread URL for AMBIGUOUS even when googleEventHtmlLink is set", () => {
     const href = pickLinkTarget({
       outcome: "AMBIGUOUS",
-      googleEventHtmlLink: "https://calendar.google.com/event/should-be-ignored",
+      googleEventHtmlLink:
+        "https://calendar.google.com/event/should-be-ignored",
       threadId: "T5",
     });
     expect(href).toBe("https://mail.google.com/mail/u/0/#inbox/T5");

@@ -117,12 +117,7 @@ describe("buildAgenda — Tomorrow morning section + D-05 extender", () => {
   it("clears tomorrowMorningFallback when morning has events", () => {
     const events = [
       // Tomorrow 07:00-08:00 EDT
-      timed(
-        "run",
-        "Run",
-        "2026-05-21T11:00:00Z",
-        "2026-05-21T12:00:00Z",
-      ),
+      timed("run", "Run", "2026-05-21T11:00:00Z", "2026-05-21T12:00:00Z"),
     ];
     const block = buildAgenda({ events, now: NOW });
     expect(block.tomorrowMorning.map((i) => i.id)).toEqual(["run"]);

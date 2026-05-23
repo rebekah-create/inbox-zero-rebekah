@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "@/utils/__mocks__/prisma";
 import { createScopedLogger } from "@/utils/logger";
-import { DigestStatus } from "@/generated/prisma/enums";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/utils/prisma");
@@ -15,9 +14,7 @@ vi.mock("@/utils/email/provider", () => ({
 }));
 
 vi.mock("@inboxzero/resend", () => ({
-  sendDigestV2Email: vi
-    .fn()
-    .mockResolvedValue({ id: "resend-msg-1" }),
+  sendDigestV2Email: vi.fn().mockResolvedValue({ id: "resend-msg-1" }),
 }));
 
 vi.mock("@/utils/ai/digest/generate-digest-content", () => ({
@@ -42,7 +39,11 @@ const baseAccount = {
   multiRuleSelectionEnabled: false,
   timezone: "America/New_York",
   calendarBookingLink: null,
-  user: { aiProvider: "anthropic", aiModel: "claude-sonnet-4-6", aiApiKey: null },
+  user: {
+    aiProvider: "anthropic",
+    aiModel: "claude-sonnet-4-6",
+    aiApiKey: null,
+  },
   account: { provider: "google", refresh_token: "rt-1" },
 };
 
@@ -50,7 +51,12 @@ function makeMessage(id: string, from: string, subject = "Subject") {
   return {
     id,
     threadId: `thread-${id}`,
-    headers: { from, subject, to: "me@example.com", date: new Date().toISOString() },
+    headers: {
+      from,
+      subject,
+      to: "me@example.com",
+      date: new Date().toISOString(),
+    },
     snippet: "",
     historyId: "h",
     subject,
@@ -138,7 +144,10 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
     const call = (sendDigestV2Email as any).mock.calls[0]?.[0];
     expect(call).toBeDefined();
     expect(call.emailProps.agenda).toBeDefined();
-    expect(call.emailProps.agenda.today.length + call.emailProps.agenda.tomorrowMorning.length).toBeGreaterThanOrEqual(1);
+    expect(
+      call.emailProps.agenda.today.length +
+        call.emailProps.agenda.tomorrowMorning.length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("populates props.calendarActivity from reconciliationRecord rows + sender map", async () => {
@@ -158,14 +167,13 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
     // The reconciliation messageId is NOT in the existing bucket messageMap,
     // so run-daily-digest must call getMessagesBatch for the missing id.
     (createEmailProvider as any).mockResolvedValue({
-      getMessagesBatch: vi
-        .fn()
-        .mockImplementation((ids: string[]) => {
-          if (ids.includes("msg-1")) return [makeMessage("msg-1", "Sender <sender@x.com>")];
-          if (ids.includes("msg-rec-1"))
-            return [makeMessage("msg-rec-1", "Scout Troop <troop@x.com>")];
-          return [];
-        }),
+      getMessagesBatch: vi.fn().mockImplementation((ids: string[]) => {
+        if (ids.includes("msg-1"))
+          return [makeMessage("msg-1", "Sender <sender@x.com>")];
+        if (ids.includes("msg-rec-1"))
+          return [makeMessage("msg-rec-1", "Scout Troop <troop@x.com>")];
+        return [];
+      }),
     });
 
     await runDailyDigest(logger);
@@ -207,7 +215,10 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
   });
 
   it("logs warn with structured fields only on fetch failure (no extractedTitle/extractedLocation)", async () => {
-    const warnCalls: Array<{ message: string; args?: Record<string, unknown> }> = [];
+    const warnCalls: Array<{
+      message: string;
+      args?: Record<string, unknown>;
+    }> = [];
     const makeFakeLogger = (): any => ({
       info: vi.fn(),
       error: vi.fn(),
@@ -250,6 +261,3 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
     }
   });
 });
-
-// Touch DigestStatus to keep the import live (prevents unused-import drops).
-void DigestStatus;

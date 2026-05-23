@@ -31,9 +31,9 @@ describe("formatAgendaTime — D-07 single-letter am/pm", () => {
   });
 
   it("returns 'All day' for all-day events", () => {
-    expect(
-      formatAgendaTime({ iso: "2026-05-23", isAllDay: true }),
-    ).toBe("All day");
+    expect(formatAgendaTime({ iso: "2026-05-23", isAllDay: true })).toBe(
+      "All day",
+    );
   });
 });
 

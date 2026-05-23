@@ -59,7 +59,8 @@ export function formatAgendaRange({
   // Pattern S5: branch on isAllDay first.
   if (isAllDay) return "All day";
   // D-06: end times shown only when present and not equal to start.
-  if (startIso === endIso) return formatAgendaTime({ iso: startIso, isAllDay: false });
+  if (startIso === endIso)
+    return formatAgendaTime({ iso: startIso, isAllDay: false });
 
   const start = formatAgendaTime({ iso: startIso, isAllDay: false });
   const end = formatAgendaTime({ iso: endIso, isAllDay: false });

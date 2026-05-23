@@ -78,7 +78,10 @@ function toAgendaItem(
   overlapMap: Map<string, string[]>,
 ): AgendaItem {
   // D-06: endTime is null when isAllDay OR when end === start.
-  const startTime = formatAgendaTime({ iso: event.start, isAllDay: event.isAllDay });
+  const startTime = formatAgendaTime({
+    iso: event.start,
+    isAllDay: event.isAllDay,
+  });
   const endTime =
     event.isAllDay || event.start === event.end
       ? null
@@ -101,7 +104,10 @@ function toAgendaItem(
  * `windowToday` / `windowTomorrowMorning` already sort by start; this re-sort
  * additionally enforces alphabetical ordering among all-day items.
  */
-function sortDay(items: AgendaItem[], startByIdMs: Map<string, number>): AgendaItem[] {
+function sortDay(
+  items: AgendaItem[],
+  startByIdMs: Map<string, number>,
+): AgendaItem[] {
   return [...items].sort((a, b) => {
     if (a.isAllDay && !b.isAllDay) return -1;
     if (!a.isAllDay && b.isAllDay) return 1;

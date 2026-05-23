@@ -208,10 +208,7 @@ describe("DigestV2Email — Phase 10 sections", () => {
 
   it("renders CalendarActivitySection with Review / Added / Confirmed sub-headings", async () => {
     const html = await render(
-      <DigestV2Email
-        {...fixture}
-        calendarActivity={calendarActivityFixture}
-      />,
+      <DigestV2Email {...fixture} calendarActivity={calendarActivityFixture} />,
     );
     expect(html).toContain("Calendar Activity");
     expect(html).toContain("Review</p>");
@@ -250,10 +247,7 @@ describe("DigestV2Email — Phase 10 sections", () => {
 
   it("renders each Calendar Activity row as a Link with its href (D-13)", async () => {
     const html = await render(
-      <DigestV2Email
-        {...fixture}
-        calendarActivity={calendarActivityFixture}
-      />,
+      <DigestV2Email {...fixture} calendarActivity={calendarActivityFixture} />,
     );
     expect(html).toContain("https://mail.google.com/mail/u/0/#inbox/abc");
     expect(html).toContain("https://calendar.google.com/event/xyz");

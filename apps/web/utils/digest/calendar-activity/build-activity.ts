@@ -43,14 +43,14 @@ import type {
  *   outcome         enum
  */
 export interface ReconciliationInput {
-  id: string;
-  outcome: string;
-  extractedTitle: string;
   extractedStart: Date;
-  threadId: string;
+  extractedTitle: string;
   googleEventHtmlLink: string | null;
-  messageId: string;
+  id: string;
   isAllDay: boolean;
+  messageId: string;
+  outcome: string;
+  threadId: string;
 }
 
 const SURFACE_OUTCOMES = new Set<string>(["MATCHED", "CREATED", "AMBIGUOUS"]);

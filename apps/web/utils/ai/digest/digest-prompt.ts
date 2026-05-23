@@ -86,9 +86,7 @@ function renderAgenda(items: AgendaCompactItem[]): string {
 
 function renderReconciliations(items: ReconciliationCompactItem[]): string {
   if (!items.length) return "### RECONCILIATIONS\n(none in the last 24h)\n";
-  const lines = items.map(
-    (i) => `- [${i.outcome}] ${i.title} — ${i.sender}`,
-  );
+  const lines = items.map((i) => `- [${i.outcome}] ${i.title} — ${i.sender}`);
   return `### RECONCILIATIONS\n${lines.join("\n")}\n`;
 }
 

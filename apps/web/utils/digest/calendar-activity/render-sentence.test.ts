@@ -10,7 +10,9 @@ describe("renderSentence — D-11 sentence templates", () => {
       extractedStart: new Date("2026-05-25T17:00:00Z"),
       isAllDay: false,
     });
-    expect(out).toBe("REI confirmed Camping reservation — already on your calendar");
+    expect(out).toBe(
+      "REI confirmed Camping reservation — already on your calendar",
+    );
   });
 
   it("CREATED renders 'Added {title} {day} at {time} to your calendar (from {sender}) →'", () => {

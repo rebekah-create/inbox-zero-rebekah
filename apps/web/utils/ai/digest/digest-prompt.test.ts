@@ -79,7 +79,11 @@ describe("buildDigestPrompt — Phase 10 extensions", () => {
       { day: "today", time: "9:00a", title: "Annual physical with Dr. Smith" },
       { day: "today", time: "12:30p", title: "Lunch with marketing team lead" },
       { day: "today", time: "3:00p", title: "Quarterly review presentation" },
-      { day: "tomorrow", time: "8:00a", title: "Pediatric dentist appointment" },
+      {
+        day: "tomorrow",
+        time: "8:00a",
+        title: "Pediatric dentist appointment",
+      },
       { day: "tomorrow", time: "10:30a", title: "Camping gear pickup at REI" },
     ];
     const reconciliationsCompact: ReconciliationCompactItem[] = [

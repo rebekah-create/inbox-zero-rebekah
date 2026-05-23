@@ -304,11 +304,7 @@ function CalendarActivitySubGroup({
   );
 }
 
-function CalendarActivitySection({
-  block,
-}: {
-  block: CalendarActivityBlock;
-}) {
+function CalendarActivitySection({ block }: { block: CalendarActivityBlock }) {
   return (
     <Section className="pt-[28px] px-[32px] pb-[4px]">
       <Text className="m-0 mb-[12px] text-[11px] font-bold tracking-[0.12em] uppercase text-gray-500">

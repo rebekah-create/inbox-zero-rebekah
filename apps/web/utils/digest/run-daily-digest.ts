@@ -276,8 +276,7 @@ export async function runDailyDigest(logger: Logger) {
         }),
       ]);
 
-      const events =
-        eventsR.status === "fulfilled" ? eventsR.value : [];
+      const events = eventsR.status === "fulfilled" ? eventsR.value : [];
       if (eventsR.status === "rejected") {
         scoped.warn("agenda.fetch.failed", {
           error: String(eventsR.reason),
@@ -313,9 +312,7 @@ export async function runDailyDigest(logger: Logger) {
         }
       }
 
-      const missingIds = reconcileMessageIds.filter(
-        (id) => !senderMap.has(id),
-      );
+      const missingIds = reconcileMessageIds.filter((id) => !senderMap.has(id));
       if (missingIds.length > 0) {
         try {
           const extra = await emailProvider.getMessagesBatch(missingIds);
