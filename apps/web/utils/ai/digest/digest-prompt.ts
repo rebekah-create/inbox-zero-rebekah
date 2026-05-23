@@ -34,6 +34,11 @@ LENGTH BUDGET
 - per-item summary: ≤ 25 words.
 - per-cluster summary: ≤ 30 words.
 
+AGENDA + RECONCILIATIONS HANDLING
+- Only reference events / reconciliations present in the AGENDA and RECONCILIATIONS blocks. Do not infer, summarize counts you can't see, or extrapolate.
+- Weave 1-2 references in naturally if they fit the morning's narrative; never enumerate them.
+- The voice guardrails above (drop humor for grief / serious illness / financial distress / legal threats / family emergencies) apply to AGENDA and RECONCILIATIONS content too.
+
 Output JSON matching the provided schema. memberMessageIds must list every messageId you grouped into the cluster.`;
 
 type BucketItem = {
@@ -52,6 +57,18 @@ export type Bucketed = {
   notifications: BucketItem[];
 };
 
+export type AgendaCompactItem = {
+  day: "today" | "tomorrow";
+  time: string;
+  title: string;
+};
+
+export type ReconciliationCompactItem = {
+  outcome: string;
+  title: string;
+  sender: string;
+};
+
 function renderBucket(name: string, items: BucketItem[]): string {
   if (!items.length) return `### ${name}\n(none)\n`;
   const lines = items.map(
@@ -61,18 +78,38 @@ function renderBucket(name: string, items: BucketItem[]): string {
   return `### ${name}\n${lines.join("\n\n")}\n`;
 }
 
+function renderAgenda(items: AgendaCompactItem[]): string {
+  if (!items.length) return "### AGENDA\n(nothing on the calendar)\n";
+  const lines = items.map((i) => `- [${i.day}] ${i.time} ${i.title}`);
+  return `### AGENDA\n${lines.join("\n")}\n`;
+}
+
+function renderReconciliations(items: ReconciliationCompactItem[]): string {
+  if (!items.length) return "### RECONCILIATIONS\n(none in the last 24h)\n";
+  const lines = items.map(
+    (i) => `- [${i.outcome}] ${i.title} — ${i.sender}`,
+  );
+  return `### RECONCILIATIONS\n${lines.join("\n")}\n`;
+}
+
 export function buildDigestPrompt({
   todayDate,
   bucketed,
+  agendaCompact = [],
+  reconciliationsCompact = [],
 }: {
   todayDate: string;
   bucketed: Bucketed;
+  agendaCompact?: AgendaCompactItem[];
+  reconciliationsCompact?: ReconciliationCompactItem[];
 }): string {
   return [
     `Today's date: ${todayDate}.`,
     "",
     "Below are the emails to summarize, grouped by their classification bucket. Generate the digest JSON per the system prompt rules.",
     "",
+    renderAgenda(agendaCompact),
+    renderReconciliations(reconciliationsCompact),
     renderBucket("URGENT", bucketed.urgent),
     renderBucket("UNCERTAIN", bucketed.uncertain),
     renderBucket("RECEIPTS", bucketed.receipts),
