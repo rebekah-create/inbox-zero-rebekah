@@ -58,6 +58,10 @@ updates:
       # 0.71.6+ breaks Turbopack production builds (jsonpath/EBADF)
       - dependency-name: "dub"
       - dependency-name: "@types/node"
+      # 7.7.0 fails "Failed to resolve the configuration from ultracite/core".
+      # Drop this entry once upstream ships any newer release.
+      - dependency-name: "ultracite"
+        versions: ["7.7.0"]
     groups:
       # Bundle minor + patch updates so the weekly review is one PR per group
       # instead of N. Major updates stay separate (more risk, more attention).
