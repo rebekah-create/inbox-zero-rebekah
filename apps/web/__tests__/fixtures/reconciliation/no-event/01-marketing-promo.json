@@ -1,0 +1,16 @@
+{
+  "id": "01-marketing-promo",
+  "category": "no-event",
+  "source": "Real inbox sample (Gmail thread 19e484998dfc1756, 2026-05-21), Amazon Fire TV upgrade announcement from store-news@amazon.com",
+  "input": {
+    "from": "store-news@amazon.com",
+    "subject": "An upgrade for your Fire TV is coming soon",
+    "bodyTruncated": "Alexa+ brings all-new helpful features. Your Fire TV is getting smarter with Alexa+. Coming soon to your device. Learn more about the new features, including improved voice control, smart-home integration, and personalized content recommendations. No action needed from you — the upgrade will arrive automatically.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "maxConfidence": 0.3,
+    "titleMustBeEmptyOrIrrelevant": true
+  },
+  "notes": "Pure marketing announcement — no event, no date, no time. Extractor MUST return either no event or very low confidence. Tests false-positive resistance on a high-volume promotional category (Amazon emails dominate the inbox)."
+}

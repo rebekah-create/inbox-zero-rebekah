@@ -1,0 +1,16 @@
+{
+  "id": "02-newsletter",
+  "category": "no-event",
+  "source": "Real inbox sample (Gmail thread 19e4f6a4017c54d0, 2026-05-22), Fun4OrlandoKids weekend newsletter from newsletters@fun4orlandokids.com",
+  "input": {
+    "from": "newsletters@fun4orlandokids.com",
+    "subject": "🇺🇸 Memorial Day Weekend Orlando Family Fun!",
+    "bodyTruncated": "Weekend Newsletter. Memorial Day Weekend is here, and Orlando is packed with family FUN all weekend long! From splash days and glow nights to parades and pool parties — check out our Events Calendar for the details. Our top picks include the Lake Eola fireworks show, the Orlando Science Center free veterans admission, and the Disney Springs Memorial Day market.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "maxConfidence": 0.3,
+    "titleMustBeEmptyOrIrrelevant": true
+  },
+  "notes": "Newsletter listing multiple ambient events (city activities) — none of which are personally scheduled for the user. Extractor MUST NOT create a calendar event for a community-listing newsletter. Tests that a multi-event newsletter does not get misclassified as a personal multi-event calendar invite (compare with labeled/05-multi-event)."
+}

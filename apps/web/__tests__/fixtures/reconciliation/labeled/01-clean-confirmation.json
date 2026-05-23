@@ -1,0 +1,22 @@
+{
+  "id": "01-clean-confirmation",
+  "category": "labeled",
+  "source": "Real inbox sample (Gmail thread 19e46b7f213adc7e, 2026-05-20), Smile 4 Me Dental via patientsreach.com",
+  "input": {
+    "from": "noreply@patientsreach.com",
+    "subject": "Confirm your upcoming dental appointment at Smile 4 Me Dental",
+    "bodyTruncated": "Hello Rebekah, You have an upcoming dental appointment(s) at Smile 4 Me Dental starting on Wednesday, May 27, 2026 at 10:30 AM. Please use the buttons below to confirm your appointment or request a callback about this appointment. You can call us directly at +13522439930. Smile 4 Me Dental, 425 Citrus Tower Blvd U 101, Clermont, FL 34711, USA",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "title": "Dental appointment at Smile 4 Me Dental",
+    "startISO": "2026-05-27T10:30:00-04:00",
+    "endISO": null,
+    "location": "425 Citrus Tower Blvd U 101, Clermont, FL 34711",
+    "attendees": [],
+    "minConfidence": 0.8,
+    "maxConfidence": null,
+    "isAllDay": false
+  },
+  "notes": "Clean dental confirmation — most common shape in inbox. Explicit time + location + provider name. Confidence should be high (>=0.8)."
+}

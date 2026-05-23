@@ -1,0 +1,22 @@
+{
+  "id": "04-all-day-event",
+  "category": "labeled",
+  "source": "Real inbox sample (Gmail thread 19e3bf9fef77de0f, 2026-05-18), Clerbrook campground reservation via marketing@em1.thousandtrails.com",
+  "input": {
+    "from": "marketing@em1.thousandtrails.com",
+    "subject": "Your Clerbrook Reservation Has Been Confirmed!",
+    "bodyTruncated": "Your reservation has been confirmed! Clerbrook. Congratulations! Your reservation has been confirmed. Confirmation Number: 2109565313. Order Date: 05-18-2026. Check-in: Friday, June 5, 2026. Check-out: Monday, June 8, 2026. Site Type: RV Site. Guest: REBEKAH GREER. Clerbrook Golf & RV Resort, 20005 US Highway 27, Clermont, FL 34715.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "title": "Clerbrook camping reservation",
+    "startISO": "2026-06-05",
+    "endISO": "2026-06-08",
+    "location": "Clerbrook Golf & RV Resort, 20005 US Highway 27, Clermont, FL 34715",
+    "attendees": [],
+    "minConfidence": 0.8,
+    "maxConfidence": null,
+    "isAllDay": true
+  },
+  "notes": "Multi-day all-day event (camping reservation). Date-only ISO format (YYYY-MM-DD) — no time-of-day. Tests that the extractor correctly emits isAllDay=true and uses date-only strings rather than midnight-time."
+}

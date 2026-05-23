@@ -1,0 +1,22 @@
+{
+  "id": "02-vague-save-the-date",
+  "category": "labeled",
+  "source": "Real inbox sample (Gmail thread 19ce8c9ee23f2ad4, 2026-03-13), EVA Summit save-the-date from hello@myeva.org",
+  "input": {
+    "from": "hello@myeva.org",
+    "subject": "Save the Date: Last Weekend in May for the EVA Summit",
+    "bodyTruncated": "Mark your calendar now for an electrifying weekend May 29-31 in Denver for the EV Summit with the EVA. Three days of EV-industry talks, vehicle showcases, and networking. Registration opens soon. More details to follow.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "title": "EVA Summit",
+    "startISO": "2026-05-29",
+    "endISO": "2026-05-31",
+    "location": "Denver",
+    "attendees": [],
+    "minConfidence": 0.5,
+    "maxConfidence": 0.8,
+    "isAllDay": true
+  },
+  "notes": "Save-the-date with vague details — date range present (May 29-31) but no start time. All-day multi-day event, low-to-mid confidence (no venue, no specific schedule). Extractor should pick up the date range + city but not invent specifics."
+}

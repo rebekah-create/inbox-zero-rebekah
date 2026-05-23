@@ -1,0 +1,22 @@
+{
+  "id": "03-reschedule",
+  "category": "labeled",
+  "source": "Real inbox sample (Gmail thread 19ca04c13eba0611, 2026-02-27), Tesla Service Appointment Update from noreply@tesla.com",
+  "input": {
+    "from": "noreply@tesla.com",
+    "subject": "Tesla Service Appointment Update",
+    "bodyTruncated": "Service Appointment Update. Your Model S service appointment has been moved to March 2, 2026 2:30 PM at the Tesla Service Clermont-State Road Service Center. Vehicle Model S 5YJSA1E10GF156306. Service Center: Tesla Service Clermont-State Road, 16455 State Road 50, Clermont, FL 34711. View in app to confirm or reschedule.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "title": "Tesla Model S service appointment",
+    "startISO": "2026-03-02T14:30:00-05:00",
+    "endISO": null,
+    "location": "Tesla Service Clermont-State Road, 16455 State Road 50, Clermont, FL 34711",
+    "attendees": [],
+    "minConfidence": 0.8,
+    "maxConfidence": null,
+    "isAllDay": false
+  },
+  "notes": "Reschedule notification — 'has been moved to' phrasing indicates an update to an existing event. Extractor should pull the NEW time; signature/match downstream is responsible for detecting the existing calendar event and treating this as an update rather than a new create."
+}

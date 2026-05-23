@@ -1,0 +1,33 @@
+{
+  "id": "05-multi-event",
+  "category": "labeled",
+  "source": "Synthetic — patterned on real Pike13 multi-class confirmations the user receives (donotreply@pike13.com). No single real email surfaced with multiple events in one message during the inbox search; this fixture is hand-crafted to mirror the actual data shape.",
+  "input": {
+    "from": "do-not-reply@pike13.com",
+    "subject": "Weekly Schedule Reminder: Madi has 2 classes this week at The World of Music",
+    "bodyTruncated": "The World of Music School Weekly Reminder. Madi is scheduled for the following classes this week: 1) Guitar Class (Step Up) on Wed, May 27 at 6:00 PM at The World of Music Four Corners. 2) Piano Class on Wed, May 27 at 7:00 PM at The World of Music Four Corners. Cancellation policy: 24 hours notice required. The World of Music Four Corners, 17500 US-27, Clermont, FL 34715.",
+    "timezone": "America/New_York"
+  },
+  "expected": {
+    "events": [
+      {
+        "title": "Guitar Class — Madi",
+        "startISO": "2026-05-27T18:00:00-04:00",
+        "endISO": null,
+        "location": "The World of Music Four Corners, 17500 US-27, Clermont, FL 34715",
+        "isAllDay": false
+      },
+      {
+        "title": "Piano Class — Madi",
+        "startISO": "2026-05-27T19:00:00-04:00",
+        "endISO": null,
+        "location": "The World of Music Four Corners, 17500 US-27, Clermont, FL 34715",
+        "isAllDay": false
+      }
+    ],
+    "minConfidence": 0.7,
+    "maxConfidence": null,
+    "isAllDay": false
+  },
+  "notes": "Multi-event email — two distinct events in a single message. Per AI-SPEC §1b and CONTEXT.md, v1.1 extracts only ONE event per message (the first / most prominent). The eval's success criterion is that the extractor picks ONE plausible event (either Guitar or Piano) with the correct time + location, NOT both. This is a regression guard against the extractor inventing combined or hallucinated events."
+}
