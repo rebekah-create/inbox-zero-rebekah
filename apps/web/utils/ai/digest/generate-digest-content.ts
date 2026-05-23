@@ -7,7 +7,9 @@ import { digestContentSchema, type DigestContent } from "./digest-schema";
 import {
   DIGEST_SYSTEM_PROMPT,
   buildDigestPrompt,
+  type AgendaCompactItem,
   type Bucketed,
+  type ReconciliationCompactItem,
 } from "./digest-prompt";
 
 const logger = createScopedLogger("ai/digest/generate-digest-content");
@@ -16,10 +18,14 @@ export async function generateDigestContent({
   emailAccount,
   todayDate,
   bucketed,
+  agendaCompact = [],
+  reconciliationsCompact = [],
 }: {
   emailAccount: EmailAccountWithAI;
   todayDate: string;
   bucketed: Bucketed;
+  agendaCompact?: AgendaCompactItem[];
+  reconciliationsCompact?: ReconciliationCompactItem[];
 }): Promise<DigestContent> {
   const itemCount = Object.values(bucketed).reduce((n, b) => n + b.length, 0);
   const scoped = logger.with({
@@ -41,7 +47,12 @@ export async function generateDigestContent({
     const aiResponse = await generateObject({
       ...modelOptions,
       system: DIGEST_SYSTEM_PROMPT,
-      prompt: buildDigestPrompt({ todayDate, bucketed }),
+      prompt: buildDigestPrompt({
+        todayDate,
+        bucketed,
+        agendaCompact,
+        reconciliationsCompact,
+      }),
       schema: digestContentSchema,
     });
     scoped.info("digest.generate.success");

@@ -16,6 +16,9 @@ import { generateDigestContent } from "@/utils/ai/digest/generate-digest-content
 import { digestAlreadySentToday, buildDigestSendCreate } from "./digest-send";
 import { formatTodayHumanET, getTodayET } from "./today-et";
 import { SystemType } from "@/generated/prisma/enums";
+import { getUpcomingEvents } from "@/utils/calendar/upcoming-events";
+import { buildAgenda } from "@/utils/digest/agenda/build-agenda";
+import { buildCalendarActivity } from "@/utils/digest/calendar-activity/build-activity";
 
 type BucketKey =
   | "urgent"
@@ -251,6 +254,118 @@ export async function runDailyDigest(logger: Logger) {
         });
       }
 
+      // Phase 10 — parallel fetch of calendar events + reconciliation rows.
+      // Promise.allSettled isolates failure per branch (D-25, D-26): either
+      // rejection logs a warn with structured fields only (Pattern S3) and
+      // the digest still sends with that block degraded.
+      const now = new Date();
+      const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const [eventsR, reconciliationsR] = await Promise.allSettled([
+        getUpcomingEvents({
+          emailAccountId: account.id,
+          now,
+          logger: scoped,
+        }),
+        prisma.reconciliationRecord.findMany({
+          where: {
+            emailAccountId: account.id,
+            createdAt: { gte: since24h },
+            outcome: { in: ["MATCHED", "CREATED", "AMBIGUOUS"] },
+          },
+          orderBy: { extractedStart: "asc" },
+        }),
+      ]);
+
+      const events =
+        eventsR.status === "fulfilled" ? eventsR.value : [];
+      if (eventsR.status === "rejected") {
+        scoped.warn("agenda.fetch.failed", {
+          error: String(eventsR.reason),
+        });
+      }
+
+      const reconciliations =
+        reconciliationsR.status === "fulfilled" ? reconciliationsR.value : [];
+      if (reconciliationsR.status === "rejected") {
+        scoped.warn("reconciliations.fetch.failed", {
+          error: String(reconciliationsR.reason),
+        });
+      }
+
+      // Build senderMap from existing messageMap + a single batched Gmail fetch
+      // for any reconciliation messageIds not already loaded for the buckets.
+      const senderMap = new Map<string, string>();
+      const senderRegex = /^(.*?)(?:\s*<([^>]+)>)?$/;
+
+      const reconcileMessageIds = Array.from(
+        new Set(
+          reconciliations
+            .map((r) => r.messageId)
+            .filter((id): id is string => !!id),
+        ),
+      );
+
+      for (const id of reconcileMessageIds) {
+        const msg = messageMap.get(id);
+        if (msg?.headers?.from) {
+          const m = senderRegex.exec(msg.headers.from);
+          senderMap.set(id, m?.[1]?.trim() || msg.headers.from);
+        }
+      }
+
+      const missingIds = reconcileMessageIds.filter(
+        (id) => !senderMap.has(id),
+      );
+      if (missingIds.length > 0) {
+        try {
+          const extra = await emailProvider.getMessagesBatch(missingIds);
+          for (const msg of extra) {
+            const from = msg.headers?.from;
+            if (!from) continue;
+            const m = senderRegex.exec(from);
+            senderMap.set(msg.id, m?.[1]?.trim() || from);
+          }
+        } catch (err) {
+          scoped.warn("reconciliations.senderBatch.failed", {
+            error: err instanceof Error ? err.message : String(err),
+            missingCount: missingIds.length,
+          });
+        }
+      }
+
+      const agenda = buildAgenda({ events, now });
+      const calendarActivity = buildCalendarActivity({
+        records: reconciliations.map((r) => ({
+          id: r.id,
+          outcome: r.outcome,
+          extractedTitle: r.extractedTitle,
+          extractedStart: r.extractedStart,
+          threadId: r.threadId,
+          googleEventHtmlLink: r.googleEventHtmlLink,
+          messageId: r.messageId,
+          isAllDay: r.extractedIsAllDay ?? false,
+        })),
+        senderMap,
+      });
+
+      const agendaCompact = [
+        ...agenda.today.map((i) => ({
+          day: "today" as const,
+          time: i.time,
+          title: i.title,
+        })),
+        ...agenda.tomorrowMorning.map((i) => ({
+          day: "tomorrow" as const,
+          time: i.time,
+          title: i.title,
+        })),
+      ];
+      const reconciliationsCompact = reconciliations.map((r) => ({
+        outcome: r.outcome,
+        title: r.extractedTitle,
+        sender: senderMap.get(r.messageId) ?? r.messageId,
+      }));
+
       const content = await generateDigestContent({
         emailAccount: {
           id: account.id,
@@ -265,6 +380,8 @@ export async function runDailyDigest(logger: Logger) {
         },
         todayDate: todayHuman,
         bucketed: buckets,
+        agendaCompact,
+        reconciliationsCompact,
       });
 
       const appBase = env.NEXT_PUBLIC_BASE_URL ?? "https://inbox.tdfurn.com";
@@ -316,6 +433,8 @@ export async function runDailyDigest(logger: Logger) {
         urgent: buildActionItems(buckets.urgent, content.urgent),
         uncertain: buildActionItems(buckets.uncertain, content.uncertain),
         autoFiled,
+        agenda,
+        calendarActivity,
       };
 
       const subject = `Daily digest · ${todayHuman}`;
