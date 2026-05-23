@@ -62,6 +62,18 @@ Plans:
 6. Calendar API or extraction failures log + do not block classification or digest delivery
 7. Token cost measured per call; total v1.1 AI spend projects ≤ $10/mo before phase close
 
+**Plans:** 8 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Add ReconciliationRecord Prisma model + migration
+- [ ] 09-02-PLAN.md — Pure helpers: titleSimilarity (Dice), eventSignature, decideOutcome decision tree
+- [ ] 09-03-PLAN.md — Haiku extraction call (cached system prompt + Zod schema + .ics adapter)
+- [ ] 09-04-PLAN.md — Prisma persistence + P2002 idempotency catch + stale-PENDING sweep
+- [ ] 09-05-PLAN.md — Google Calendar events.insert wrapper with [AI] prefix + source-email back-ref
+- [ ] 09-06-PLAN.md — reconcileMessage orchestrator (D-12 sequence, failure-isolation)
+- [ ] 09-07-PLAN.md — Wire reconcileMessage into process-history-item.ts after() block
+- [ ] 09-08-PLAN.md — Labeled fixture corpus + RUN_AI_TESTS extraction eval + cost projection
+
 ### Phase 10: Digest Agenda + Reconciliation Outcomes
 
 **Goal:** Lead the 9am ET digest with today + tomorrow's agenda so the user is oriented to the day, and render a one-line outcome for every reconciliation in the last 24h (`MATCHED` / `CREATED` / `AMBIGUOUS`).
