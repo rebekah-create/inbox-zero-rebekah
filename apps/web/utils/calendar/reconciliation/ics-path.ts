@@ -1,4 +1,7 @@
-import { analyzeCalendarEvent, hasIcsAttachment } from "@/utils/parse/calender-event";
+import {
+  analyzeCalendarEvent,
+  hasIcsAttachment,
+} from "@/utils/parse/calender-event";
 import type { ParsedMessage } from "@/utils/types";
 import type { CandidateEvent } from "./extract";
 

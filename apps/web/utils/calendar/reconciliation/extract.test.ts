@@ -104,7 +104,6 @@ describe("extractCandidateEvent", () => {
     vi.mocked(getModel).mockReturnValue({
       provider,
       modelName: "claude-haiku-4-5",
-      // biome-ignore lint/suspicious/noExplicitAny: test mock
       model: {} as any,
       fallbackModels: [],
       hasUserApiKey: false,

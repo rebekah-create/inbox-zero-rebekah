@@ -85,16 +85,18 @@ describe("createCalendarEvent", () => {
     const result = await createCalendarEvent({ input: makeInput(), logger });
 
     expect(result).toEqual({ ok: false, reason: "no-connection" });
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.any(String),
-      { emailAccountId: EMAIL_ACCOUNT_ID },
-    );
+    expect(logger.warn).toHaveBeenCalledWith(expect.any(String), {
+      emailAccountId: EMAIL_ACCOUNT_ID,
+    });
   });
 
   it("Test 2: returns ok with googleEventId + htmlLink on success", async () => {
     mockConnection();
     mockEventsInsert.mockResolvedValue({
-      data: { id: "evt_123", htmlLink: "https://calendar.google.com/event?eid=evt_123" },
+      data: {
+        id: "evt_123",
+        htmlLink: "https://calendar.google.com/event?eid=evt_123",
+      },
     });
     const logger = makeLogger();
 
@@ -141,7 +143,10 @@ describe("createCalendarEvent", () => {
     });
     const logger = makeLogger();
 
-    await createCalendarEvent({ input: makeInput({ isAllDay: false }), logger });
+    await createCalendarEvent({
+      input: makeInput({ isAllDay: false }),
+      logger,
+    });
 
     const requestBody = mockEventsInsert.mock.calls[0][0].requestBody;
     expect(requestBody.start).toEqual({
@@ -275,7 +280,9 @@ describe("createCalendarEvent", () => {
 
   it("returns api-error if insert returns no id", async () => {
     mockConnection();
-    mockEventsInsert.mockResolvedValue({ data: { id: null, htmlLink: "https://x" } });
+    mockEventsInsert.mockResolvedValue({
+      data: { id: null, htmlLink: "https://x" },
+    });
     const logger = makeLogger();
 
     const result = await createCalendarEvent({ input: makeInput(), logger });

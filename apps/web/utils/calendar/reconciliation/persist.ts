@@ -47,7 +47,10 @@ export async function createReconciliationRecord({
   input: CreateReconciliationInput;
   logger: Logger;
 }): Promise<
-  | { created: true; record: Awaited<ReturnType<typeof prisma.reconciliationRecord.create>> }
+  | {
+      created: true;
+      record: Awaited<ReturnType<typeof prisma.reconciliationRecord.create>>;
+    }
   | { created: false; record: null }
 > {
   try {

@@ -11,7 +11,9 @@ vi.mock("@/utils/calendar/upcoming-events", () => ({
   getUpcomingEvents: vi.fn(),
 }));
 vi.mock("@/utils/mail", () => ({
-  convertEmailHtmlToText: vi.fn(({ htmlText }: { htmlText: string }) => htmlText),
+  convertEmailHtmlToText: vi.fn(
+    ({ htmlText }: { htmlText: string }) => htmlText,
+  ),
 }));
 vi.mock("./ics-path", () => ({ extractFromIcs: vi.fn() }));
 vi.mock("./extract", () => ({ extractCandidateEvent: vi.fn() }));
@@ -54,9 +56,7 @@ function makeLogger(): Logger {
   } as unknown as Logger;
 }
 
-function makeMessage(
-  overrides: Partial<ParsedMessage> = {},
-): ParsedMessage {
+function makeMessage(overrides: Partial<ParsedMessage> = {}): ParsedMessage {
   const subject = (overrides.subject as string | undefined) ?? "Test subject";
   return {
     id: "msg_1",

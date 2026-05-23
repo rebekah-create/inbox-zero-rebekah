@@ -101,75 +101,67 @@ describe.runIf(RUN)(
       saveAiUsageSpy.mockClear();
     });
 
-    it(
-      "projects monthly extraction cost <= $1/mo at expected (90) and pessimistic (200) volumes",
-      async () => {
-        const FIXTURES_ROOT = join(
-          __dirname,
-          "../../../__tests__/fixtures/reconciliation",
+    it("projects monthly extraction cost <= $1/mo at expected (90) and pessimistic (200) volumes", async () => {
+      const FIXTURES_ROOT = join(
+        import.meta.dirname,
+        "../../../__tests__/fixtures/reconciliation",
+      );
+      const labeled = readdirSync(join(FIXTURES_ROOT, "labeled"))
+        .filter((f) => f.endsWith(".json"))
+        .map((f) =>
+          JSON.parse(readFileSync(join(FIXTURES_ROOT, "labeled", f), "utf-8")),
         );
-        const labeled = readdirSync(join(FIXTURES_ROOT, "labeled"))
-          .filter((f) => f.endsWith(".json"))
-          .map((f) =>
-            JSON.parse(
-              readFileSync(join(FIXTURES_ROOT, "labeled", f), "utf-8"),
-            ),
-          );
 
-        expect(labeled.length).toBeGreaterThanOrEqual(5);
+      expect(labeled.length).toBeGreaterThanOrEqual(5);
 
-        // Run every labeled fixture through LIVE extraction;
-        // saveAiUsageSpy collects usage.
-        for (const fx of labeled) {
-          await extractCandidateEvent({
-            email: {
-              from: fx.input.from,
-              subject: fx.input.subject,
-              bodyTruncated: fx.input.bodyTruncated,
-            },
-            emailAccount: makeEmailAccount(),
-            logger: makeMockLogger(),
-          });
-        }
-
-        // Aggregate real token counts across all calls. The
-        // saveAiUsageSpy.mock.calls array is the source of truth — if it is
-        // empty the test MUST fail (no fallback to a hard-coded estimate).
-        expect(saveAiUsageSpy).toHaveBeenCalledTimes(labeled.length);
-
-        const costs = saveAiUsageSpy.mock.calls.map((args) => {
-          const usage: UsagePayload = (args[0] as { usage: UsagePayload })
-            .usage;
-          return perCallCost(usage);
+      // Run every labeled fixture through LIVE extraction;
+      // saveAiUsageSpy collects usage.
+      for (const fx of labeled) {
+        await extractCandidateEvent({
+          email: {
+            from: fx.input.from,
+            subject: fx.input.subject,
+            bodyTruncated: fx.input.bodyTruncated,
+          },
+          emailAccount: makeEmailAccount(),
+          logger: makeMockLogger(),
         });
+      }
 
-        const avgPerCall = costs.reduce((s, c) => s + c, 0) / costs.length;
-        const projectedMonthly = avgPerCall * MONTHLY_VOLUME;
-        const projectedPessimistic = avgPerCall * PESSIMISTIC_VOLUME;
+      // Aggregate real token counts across all calls. The
+      // saveAiUsageSpy.mock.calls array is the source of truth — if it is
+      // empty the test MUST fail (no fallback to a hard-coded estimate).
+      expect(saveAiUsageSpy).toHaveBeenCalledTimes(labeled.length);
 
-        // Diagnostic output for SUMMARY.md
-        // biome-ignore lint/suspicious/noConsole: diagnostic captured by exec summary
-        console.log(
-          JSON.stringify(
-            {
-              fixtureCount: labeled.length,
-              avgPerCallCostUsd: avgPerCall,
-              projectedMonthlyAtExpectedVolume: projectedMonthly,
-              projectedMonthlyAtPessimisticVolume: projectedPessimistic,
-              monthlyVolume: MONTHLY_VOLUME,
-              pessimisticVolume: PESSIMISTIC_VOLUME,
-              budget: COST_BUDGET_PER_MONTH,
-              pricingSnapshotDate: "2026-05-22",
-            },
-            null,
-            2,
-          ),
-        );
+      const costs = saveAiUsageSpy.mock.calls.map((args) => {
+        const usage: UsagePayload = (args[0] as { usage: UsagePayload }).usage;
+        return perCallCost(usage);
+      });
 
-        expect(projectedMonthly).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
-        expect(projectedPessimistic).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
-      },
-      300_000,
-    );
+      const avgPerCall = costs.reduce((s, c) => s + c, 0) / costs.length;
+      const projectedMonthly = avgPerCall * MONTHLY_VOLUME;
+      const projectedPessimistic = avgPerCall * PESSIMISTIC_VOLUME;
+
+      // Diagnostic output for SUMMARY.md
+      console.log(
+        JSON.stringify(
+          {
+            fixtureCount: labeled.length,
+            avgPerCallCostUsd: avgPerCall,
+            projectedMonthlyAtExpectedVolume: projectedMonthly,
+            projectedMonthlyAtPessimisticVolume: projectedPessimistic,
+            monthlyVolume: MONTHLY_VOLUME,
+            pessimisticVolume: PESSIMISTIC_VOLUME,
+            budget: COST_BUDGET_PER_MONTH,
+            pricingSnapshotDate: "2026-05-22",
+          },
+          null,
+          2,
+        ),
+      );
+
+      expect(projectedMonthly).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
+      expect(projectedPessimistic).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
+    }, 300_000);
   },
 );

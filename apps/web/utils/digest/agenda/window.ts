@@ -35,14 +35,6 @@ function etTomorrowDateString(d: Date): string {
   return etDateString(plus);
 }
 
-/**
- * Returns a Date instant equal to the given hour-of-day in ET on the ET-day
- * containing `anchor`. Handles DST via Intl offset lookup.
- */
-function etDayBoundary(anchor: Date, hour: number): Date {
-  return etBoundaryFromYmd(etDateString(anchor), hour);
-}
-
 /** Returns a Date instant for hour-of-day ET on a specific ET YYYY-MM-DD. */
 function etBoundaryFromYmd(ymd: string, hour: number): Date {
   // Probe the UTC offset for ET at noon on the target date by reading Intl parts.

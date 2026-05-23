@@ -166,7 +166,7 @@ export async function reconcileMessage({
       const stale = await prisma.reconciliationRecord.findUnique({
         where: { id: existingRowForReuse.id },
       });
-      if (!stale || !stale.extractedTitle || !stale.extractedStart) {
+      if (!stale?.extractedTitle || !stale?.extractedStart) {
         // Defensive: persisted row missing fields → fresh extract fallback.
         existingRowForReuse = null;
         candidate = pathA

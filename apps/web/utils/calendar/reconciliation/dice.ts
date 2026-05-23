@@ -14,7 +14,8 @@
  * This module is pure — no I/O, no imports outside this file.
  */
 export function titleSimilarity(a: string, b: string): number {
-  const tokens = (s: string) => s.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const tokens = (s: string) =>
+    s.toLowerCase().trim().split(/\s+/).filter(Boolean);
   const A = new Set(tokens(a));
   const B = new Set(tokens(b));
   if (A.size === 0 && B.size === 0) return 1;
