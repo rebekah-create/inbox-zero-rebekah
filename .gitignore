@@ -122,6 +122,7 @@ eval-results/
 # ── GSD baseline (auto-generated) ──
 .gsd
 .gsd-id
+.gsd.migrating
 .mcp.json
 .bg-shell/
 Thumbs.db
