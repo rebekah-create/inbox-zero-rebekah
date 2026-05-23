@@ -27,7 +27,7 @@
     "@turbo/gen": "2.9.6",
     "commander": "14.0.3",
     "husky": "9.1.7",
-    "lint-staged": "16.4.0",
+    "lint-staged": "17.0.5",
     "tsconfig-paths": "4.2.0",
     "tsx": "4.21.0",
     "turbo": "2.9.6",
