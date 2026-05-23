@@ -7,6 +7,8 @@ import {
 } from "@/__tests__/mocks/email-provider.mock";
 import { getEmailAccount, createTestLogger } from "@/__tests__/helpers";
 import { handleOutboundMessage } from "@/utils/reply-tracker/handle-outbound";
+import { runRules } from "@/utils/ai/choose-rule/run-rules";
+import { reconcileMessage } from "@/utils/calendar/reconciliation";
 import { DraftReplyConfidence } from "@/generated/prisma/enums";
 
 vi.mock("server-only", () => ({}));
@@ -37,6 +39,9 @@ vi.mock("@/utils/ai/choose-rule/run-rules", () => ({
 }));
 vi.mock("@/utils/reply-tracker/handle-outbound", () => ({
   handleOutboundMessage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/utils/calendar/reconciliation", () => ({
+  reconcileMessage: vi.fn().mockResolvedValue(undefined),
 }));
 
 const logger = createTestLogger();
@@ -346,6 +351,98 @@ describe("Provider Edge Cases", () => {
 
       expect(provider.getMessage).not.toHaveBeenCalled();
       expect(handleOutboundMessage).toHaveBeenCalled();
+    });
+  });
+
+  describe("Calendar reconciliation", () => {
+    it("invokes reconcileMessage with the parsed message", async () => {
+      const parsedMessage = getMockParsedMessage({ labelIds: ["INBOX"] });
+      const provider = createMockEmailProvider({
+        getMessage: vi.fn().mockResolvedValue(parsedMessage),
+        isSentMessage: vi.fn().mockReturnValue(false),
+      });
+
+      vi.mocked(reconcileMessage).mockResolvedValue(undefined);
+
+      await processHistoryItem(
+        { messageId: "msg-123", threadId: "thread-123" },
+        { ...baseOptions, provider, hasAiAccess: true },
+      );
+
+      expect(reconcileMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parsedMessage,
+          emailAccount: expect.any(Object),
+          emailAccountId: baseOptions.emailAccount.id,
+          logger: expect.any(Object),
+        }),
+      );
+    });
+
+    it("does not break processHistoryItem when reconcileMessage throws", async () => {
+      const parsedMessage = getMockParsedMessage({ labelIds: ["INBOX"] });
+      const provider = createMockEmailProvider({
+        getMessage: vi.fn().mockResolvedValue(parsedMessage),
+        isSentMessage: vi.fn().mockReturnValue(false),
+      });
+
+      vi.mocked(reconcileMessage).mockRejectedValue(new Error("boom"));
+
+      await expect(
+        processHistoryItem(
+          { messageId: "msg-123", threadId: "thread-123" },
+          { ...baseOptions, provider, hasAiAccess: true },
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("still runs classification (runRules) when reconcileMessage rejects on INBOX", async () => {
+      const parsedMessage = getMockParsedMessage({ labelIds: ["INBOX"] });
+      const provider = createMockEmailProvider({
+        getMessage: vi.fn().mockResolvedValue(parsedMessage),
+        isSentMessage: vi.fn().mockReturnValue(false),
+      });
+
+      vi.mocked(reconcileMessage).mockRejectedValue(new Error("boom"));
+
+      await processHistoryItem(
+        { messageId: "msg-123", threadId: "thread-123" },
+        {
+          ...baseOptions,
+          provider,
+          hasAiAccess: true,
+          hasAutomationRules: true,
+          rules: [],
+        },
+      );
+
+      expect(vi.mocked(runRules)).toHaveBeenCalled();
+    });
+
+    it("does not invoke reconcileMessage on SENT (handleOutboundMessage returns first)", async () => {
+      const parsedMessage = getMockParsedMessage({
+        labelIds: ["SENT"],
+        headers: {
+          from: "user@test.com",
+          to: "recipient@example.com",
+          subject: "Test",
+          date: "2024-01-01",
+        },
+      });
+      const provider = createMockEmailProvider({
+        getMessage: vi.fn().mockResolvedValue(parsedMessage),
+        isSentMessage: vi.fn().mockReturnValue(true),
+      });
+
+      vi.mocked(reconcileMessage).mockResolvedValue(undefined);
+
+      await processHistoryItem(
+        { messageId: "msg-123", threadId: "thread-123" },
+        { ...baseOptions, provider, hasAiAccess: true },
+      );
+
+      expect(vi.mocked(handleOutboundMessage)).toHaveBeenCalled();
+      expect(vi.mocked(reconcileMessage)).not.toHaveBeenCalled();
     });
   });
 });
