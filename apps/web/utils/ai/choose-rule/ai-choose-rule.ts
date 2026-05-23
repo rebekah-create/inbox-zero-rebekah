@@ -1,3 +1,4 @@
+import type { SystemModelMessage } from "ai";
 import { z } from "zod";
 import type { EmailAccountWithAI } from "@/utils/llms/types";
 import { stringifyEmail } from "@/utils/stringify-email";
@@ -448,14 +449,17 @@ function isAnthropicProvider(provider: string): boolean {
   return provider === Provider.ANTHROPIC;
 }
 
-function buildClassifierSystem(systemText: string, provider: string) {
+function buildClassifierSystem(
+  systemText: string,
+  provider: string,
+): string | SystemModelMessage[] {
   if (!isAnthropicProvider(provider)) return systemText;
   return [
     {
-      role: "system" as const,
+      role: "system",
       content: [
         {
-          type: "text" as const,
+          type: "text",
           text: systemText,
           providerOptions: {
             anthropic: { cacheControl: { type: "ephemeral" } },
