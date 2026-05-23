@@ -30,7 +30,7 @@
     "lint-staged": "17.0.5",
     "tsconfig-paths": "4.2.0",
     "tsx": "4.21.0",
-    "turbo": "2.9.6",
+    "turbo": "2.9.14",
     "ultracite": "7.6.0"
   },
   "packageManager": "pnpm@10.33.0",
