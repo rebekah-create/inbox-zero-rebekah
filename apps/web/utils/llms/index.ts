@@ -297,20 +297,43 @@ export function createGenerateObject({
     let latestRepairAttempt: RepairAttemptState | undefined;
 
     const generate = async (candidate: ResolvedModel) => {
-      const systemText = applyPromptHardeningToSystem({
-        system: typeof options.system === "string" ? options.system : undefined,
+      // Phase 8.5 caching introduced SystemModelMessage[] callers (Anthropic
+      // ephemeral cache-control). The earlier shape coerced any non-string
+      // `system` to `undefined`, dropping the entire system prompt — which
+      // silently broke classifier labeling in production. Preserve the array
+      // form, but still apply prompt hardening to the inner content.
+      const inputSystem = options.system as
+        | string
+        | { role: "system"; content: string; providerOptions?: unknown }[]
+        | undefined;
+      const baseSystemText =
+        typeof inputSystem === "string"
+          ? inputSystem
+          : Array.isArray(inputSystem) &&
+              typeof inputSystem[0]?.content === "string"
+            ? inputSystem[0].content
+            : undefined;
+      const hardenedSystemText = applyPromptHardeningToSystem({
+        system: baseSystemText,
         promptHardening,
       });
+      const systemForRequest: typeof inputSystem =
+        Array.isArray(inputSystem) && inputSystem.length > 0
+          ? [
+              { ...inputSystem[0], content: hardenedSystemText ?? "" },
+              ...inputSystem.slice(1),
+            ]
+          : hardenedSystemText;
 
       logger.trace("Generating object", {
         label,
         promptHardening,
-        system: systemText?.slice(0, MAX_LOG_LENGTH),
+        system: hardenedSystemText?.slice(0, MAX_LOG_LENGTH),
         prompt: options.prompt?.slice(0, MAX_LOG_LENGTH),
       });
 
       if (
-        !systemText?.includes("JSON") &&
+        !hardenedSystemText?.includes("JSON") &&
         typeof options.prompt === "string" &&
         !options.prompt?.includes("JSON")
       ) {
@@ -339,7 +362,7 @@ export function createGenerateObject({
           return repairResult.text;
         },
         ...options,
-        system: systemText,
+        system: systemForRequest,
         ...commonOptions,
         providerOptions,
         model: withPosthogTracing({
