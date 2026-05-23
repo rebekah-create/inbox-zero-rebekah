@@ -40,5 +40,9 @@ module.exports = {
     "dub",
 
     "@types/node",
+
+    // 7.7.0 fails with "Failed to resolve the configuration from ultracite/core"
+    // Revisit once upstream ships a fix.
+    "ultracite",
   ],
 };
