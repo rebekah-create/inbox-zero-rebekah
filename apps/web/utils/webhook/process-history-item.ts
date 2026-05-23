@@ -11,6 +11,7 @@ import {
   processAttachment,
   getFilableAttachments,
 } from "@/utils/drive/filing-engine";
+import { reconcileMessage } from "@/utils/calendar/reconciliation";
 import { handleOutboundMessage } from "@/utils/reply-tracker/handle-outbound";
 import { cleanupThreadAIDrafts } from "@/utils/reply-tracker/draft-tracking";
 import { clearFollowUpLabel } from "@/utils/follow-up/labels";
@@ -251,6 +252,26 @@ export async function processHistoryItem(
         }),
       );
     }
+
+    after(() =>
+      runWithBackgroundLoggerFlush({
+        logger,
+        task: async () => {
+          await reconcileMessage({
+            parsedMessage,
+            emailAccount,
+            emailAccountId,
+            logger,
+          }).catch((error) => {
+            logger.error("Failed to reconcile message", {
+              messageId: parsedMessage.id,
+              error,
+            });
+          });
+        },
+        extra: { operation: "reconcile-message" },
+      }),
+    );
 
     // Remove follow-up label if present (they replied, so follow-up no longer needed)
     // This handles the case where we were awaiting a reply from them
