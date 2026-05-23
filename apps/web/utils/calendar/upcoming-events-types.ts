@@ -9,35 +9,35 @@
  */
 
 export interface NormalizedCalendarEvent {
-  /** Google Calendar event id. */
-  id: string;
-  /** Event title. Defaults to "Untitled" if `event.summary` is missing. */
-  title: string;
   /**
-   * RFC3339 timestamp for timed events; "YYYY-MM-DD" string when isAllDay is true.
-   * Never wrap in `new Date()` without branching on isAllDay — see
-   * 08-RESEARCH.md Pitfall 4 (UTC midnight shifts all-day dates by ~hours).
+   * Email addresses only. Empty array if no attendees or the owner is the
+   * sole attendee.
    */
-  start: string;
+  attendees: string[];
+  /** Event description, or null when absent. */
+  description: string | null;
   /**
    * RFC3339 timestamp for timed events; "YYYY-MM-DD" string when isAllDay is true.
    * Never wrap in `new Date()` without branching on isAllDay — see
    * 08-RESEARCH.md Pitfall 4 (UTC midnight shifts all-day dates by ~hours).
    */
   end: string;
+  /** Google Calendar UI link. Defaults to "" if missing. */
+  htmlLink: string;
+  /** Google Calendar event id. */
+  id: string;
   /** True when the Google event used `date` (not `dateTime`). */
   isAllDay: boolean;
   /** Event location string, or null when absent. */
   location: string | null;
-  /** Event description, or null when absent. */
-  description: string | null;
   /**
-   * Email addresses only. Empty array if no attendees or the owner is the
-   * sole attendee.
+   * RFC3339 timestamp for timed events; "YYYY-MM-DD" string when isAllDay is true.
+   * Never wrap in `new Date()` without branching on isAllDay — see
+   * 08-RESEARCH.md Pitfall 4 (UTC midnight shifts all-day dates by ~hours).
    */
-  attendees: string[];
-  /** Google Calendar UI link. Defaults to "" if missing. */
-  htmlLink: string;
+  start: string;
+  /** Event title. Defaults to "Untitled" if `event.summary` is missing. */
+  title: string;
 }
 
 /**

@@ -227,7 +227,7 @@ ${stringifyEmail(email, 500)}
       system,
       prompt,
       schema: singleRuleSchema,
-    }) as Parameters<typeof generateObject>[0],
+    }),
   );
 
   const hasRuleName = !!aiResponse.object?.ruleName;
@@ -350,7 +350,7 @@ ${stringifyEmail(email, 500)}
       system,
       prompt,
       schema: multiRuleSchema,
-    }) as Parameters<typeof generateObject>[0],
+    }),
   );
 
   return {
@@ -452,7 +452,7 @@ function isAnthropicProvider(provider: string): boolean {
   return provider === Provider.ANTHROPIC;
 }
 
-function buildClassifierRequest({
+function buildClassifierRequest<Schema>({
   modelOptions,
   system,
   prompt,
@@ -461,7 +461,7 @@ function buildClassifierRequest({
   modelOptions: ReturnType<typeof getModel>;
   system: string;
   prompt: string;
-  schema: unknown;
+  schema: Schema;
 }) {
   if (isAnthropicProvider(modelOptions.provider)) {
     return {
