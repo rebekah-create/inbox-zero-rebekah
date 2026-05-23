@@ -13,6 +13,17 @@ import {
 // Phase 4 (Daily Digest) — visual template, static-data only.
 // Design reference: .planning/phases/04-daily-digest/design-reference/digest-mockup.html
 // Wiring to real DigestItem data + Sonnet narrative happens in plan-phase.
+//
+// Phase 10 — extends DigestV2Props with optional `agenda` and `calendarActivity`
+// (see .planning/phases/10-digest-agenda-reconciliation-outcomes/). When both
+// fields are absent the template renders the Phase 4 layout unchanged (D-03).
+//
+// AgendaBlock and CalendarActivityBlock are declared inline here (not imported
+// from apps/web) because packages/resend has no path alias into apps/web and
+// importing across workspace boundaries breaks the resend tsconfig rootDir.
+// Plan 03 (`apps/web/utils/digest/{agenda,calendar-activity}/types.ts`) keeps
+// the authoritative definitions; the shapes here are byte-identical and
+// structurally compatible at the call site in Plan 05.
 
 export type ActionItem = {
   subject: string;
@@ -35,6 +46,44 @@ export type AutoFiledGroup = {
   rows: AutoFiledRow[];
 };
 
+// --- Phase 10: agenda + calendar activity ----------------------------------
+
+export type AgendaItem = {
+  /** "9:00a" — D-07 single-letter am/pm marker. "All day" when isAllDay. */
+  time: string;
+  /** "10:00a" or null. Null when end equals start (D-06). */
+  endTime: string | null;
+  title: string;
+  location: string | null;
+  isAllDay: boolean;
+  /** Ids of overlapping siblings in the same sub-section (D-08). Empty when no overlap. */
+  overlapWith: string[];
+  /** NormalizedCalendarEvent.id — needed so detectOverlaps can key its return map. */
+  id: string;
+};
+
+export type AgendaBlock = {
+  today: AgendaItem[];
+  tomorrowMorning: AgendaItem[];
+  /** D-05 fallback copy when today has no events; null otherwise. */
+  todayFallback: string | null;
+  /** D-05 fallback copy when tomorrow morning has no events; null otherwise. */
+  tomorrowMorningFallback: string | null;
+};
+
+export type CalendarActivityRow = {
+  sentence: string;
+  href: string;
+};
+
+export type CalendarActivityBlock = {
+  review: CalendarActivityRow[]; // AMBIGUOUS (D-11)
+  added: CalendarActivityRow[]; // CREATED (D-11)
+  confirmed: CalendarActivityRow[]; // MATCHED (D-11)
+};
+
+// ---------------------------------------------------------------------------
+
 export type DigestV2Props = {
   baseUrl?: string;
   date?: string;
@@ -44,6 +93,10 @@ export type DigestV2Props = {
   urgent: ActionItem[];
   uncertain: ActionItem[];
   autoFiled: AutoFiledGroup[];
+  /** Phase 10 — D-01: rendered between narrative and Urgent when truthy. */
+  agenda?: AgendaBlock | null;
+  /** Phase 10 — D-02: rendered between Uncertain and auto-filed groups when truthy AND non-empty. */
+  calendarActivity?: CalendarActivityBlock | null;
 };
 
 const groupColor: Record<
@@ -143,6 +196,135 @@ function AutoFiledGroupCard({ group }: { group: AutoFiledGroup }) {
   );
 }
 
+// --- Phase 10 sub-components -----------------------------------------------
+
+function AgendaItemRow({
+  item,
+  isFirst,
+}: {
+  item: AgendaItem;
+  isFirst: boolean;
+}) {
+  const timeLabel = item.isAllDay
+    ? "All day"
+    : item.endTime
+      ? `${item.time}–${item.endTime}`
+      : item.time;
+  const hasOverlap = item.overlapWith.length > 0;
+  return (
+    <Text
+      className={`text-[14px] text-gray-700 leading-[1.55] m-0 py-[6px] ${
+        isFirst ? "" : "border-0 border-t border-solid border-black/5"
+      }`}
+    >
+      <span className="font-semibold text-gray-900 mr-[8px]">{timeLabel}</span>
+      {item.title}
+      {item.location ? (
+        <span className="text-gray-500 ml-[8px]">· {item.location}</span>
+      ) : null}
+      {hasOverlap ? (
+        <span className="bg-amber-100 text-amber-800 rounded px-[6px] py-[1px] text-[11px] font-semibold ml-[6px]">
+          [⚠ overlaps]
+        </span>
+      ) : null}
+    </Text>
+  );
+}
+
+function AgendaDayBlock({
+  heading,
+  items,
+  fallback,
+}: {
+  heading: string;
+  items: AgendaItem[];
+  fallback: string | null;
+}) {
+  return (
+    <>
+      <Text className="m-0 mb-[8px] mt-[12px] text-[11px] font-bold tracking-[0.12em] uppercase text-gray-500">
+        {heading}
+      </Text>
+      {items.length > 0 ? (
+        items.map((item, i) => (
+          <AgendaItemRow key={item.id} item={item} isFirst={i === 0} />
+        ))
+      ) : fallback ? (
+        <Text className="italic text-gray-500 text-[14px] m-0 py-[6px]">
+          {fallback}
+        </Text>
+      ) : null}
+    </>
+  );
+}
+
+function AgendaSection({ agenda }: { agenda: AgendaBlock }) {
+  return (
+    <Section className="pt-[28px] px-[32px] pb-[4px]">
+      <AgendaDayBlock
+        heading="TODAY"
+        items={agenda.today}
+        fallback={agenda.todayFallback}
+      />
+      <AgendaDayBlock
+        heading="TOMORROW MORNING"
+        items={agenda.tomorrowMorning}
+        fallback={agenda.tomorrowMorningFallback}
+      />
+    </Section>
+  );
+}
+
+function CalendarActivitySubGroup({
+  heading,
+  rows,
+}: {
+  heading: string;
+  rows: CalendarActivityRow[];
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <>
+      <Text className="m-0 mt-[10px] mb-[6px] text-[12px] font-bold tracking-[0.06em] uppercase text-slate-700">
+        {heading}
+      </Text>
+      {rows.map((row, i) => (
+        <Text
+          key={`${heading}-${i}`}
+          className={`text-[14px] text-slate-700 leading-[1.55] m-0 py-[6px] ${
+            i > 0 ? "border-0 border-t border-solid border-black/5" : ""
+          }`}
+        >
+          <Link href={row.href} className="text-slate-700 underline">
+            {row.sentence}
+          </Link>
+        </Text>
+      ))}
+    </>
+  );
+}
+
+function CalendarActivitySection({
+  block,
+}: {
+  block: CalendarActivityBlock;
+}) {
+  return (
+    <Section className="pt-[28px] px-[32px] pb-[4px]">
+      <Text className="m-0 mb-[12px] text-[11px] font-bold tracking-[0.12em] uppercase text-gray-500">
+        Calendar Activity
+      </Text>
+      <Section className="border-0 border-l-[4px] border-l-teal-400 border-solid bg-teal-50 rounded-[3px] py-[14px] px-[16px] pb-[10px]">
+        <CalendarActivitySubGroup heading="Review" rows={block.review} />
+        <CalendarActivitySubGroup heading="Added" rows={block.added} />
+        <CalendarActivitySubGroup heading="Confirmed" rows={block.confirmed} />
+      </Section>
+    </Section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 export default function DigestV2Email({
   baseUrl = "https://inbox.tdfurn.com",
   date = "Monday, May 4",
@@ -152,7 +334,15 @@ export default function DigestV2Email({
   urgent,
   uncertain,
   autoFiled,
+  agenda,
+  calendarActivity,
 }: DigestV2Props) {
+  const showCalendarActivity =
+    !!calendarActivity &&
+    (calendarActivity.review.length > 0 ||
+      calendarActivity.added.length > 0 ||
+      calendarActivity.confirmed.length > 0);
+
   return (
     <Html>
       <Head />
@@ -186,6 +376,9 @@ export default function DigestV2Email({
                   </Text>
                 </Section>
               </Section>
+
+              {/* Phase 10 — Agenda (between narrative and Urgent, D-01) */}
+              {agenda ? <AgendaSection agenda={agenda} /> : null}
 
               {/* Urgent */}
               {urgent.length > 0 && (
@@ -226,6 +419,11 @@ export default function DigestV2Email({
                   ))}
                 </Section>
               )}
+
+              {/* Phase 10 — Calendar Activity (between Uncertain and auto-filed, D-02) */}
+              {showCalendarActivity && calendarActivity ? (
+                <CalendarActivitySection block={calendarActivity} />
+              ) : null}
 
               {/* Auto-filed groups */}
               {autoFiled.map((group) => (
@@ -286,6 +484,73 @@ DigestV2Email.PreviewProps = {
   narrativeGreeting: "Morning, Rebekah —",
   narrativeBody:
     "Happy National Donut Day, allegedly. (It's a real thing. The internet wouldn't lie.) Quiet night in your inbox: 31 emails, mostly receipts and newsletters. Two things actually want your time: Joe is now three follow-ups deep on the Q3 contract — pretty sure his next email will be in poetry — and Sarah Chen needs a yes/no on the Acme board reschedule before noon. Two emails confused the classifier; I parked them in Uncertain so you can teach me how to handle their kind.",
+  agenda: {
+    today: [
+      {
+        id: "evt-today-1",
+        time: "9:00a",
+        endTime: "10:00a",
+        title: "Pediatrician visit — Mia",
+        location: "Orlando Health",
+        isAllDay: false,
+        overlapWith: ["evt-today-2"],
+      },
+      {
+        id: "evt-today-2",
+        time: "9:30a",
+        endTime: "10:15a",
+        title: "Camping reservation call",
+        location: null,
+        isAllDay: false,
+        overlapWith: ["evt-today-1"],
+      },
+      {
+        id: "evt-today-3",
+        time: "2:45p",
+        endTime: null,
+        title: "Camp pickup",
+        location: "Riverside School",
+        isAllDay: false,
+        overlapWith: [],
+      },
+    ],
+    tomorrowMorning: [
+      {
+        id: "evt-tomorrow-1",
+        time: "8:30a",
+        endTime: "9:15a",
+        title: "Dentist",
+        location: "Smile Dental",
+        isAllDay: false,
+        overlapWith: [],
+      },
+    ],
+    todayFallback: null,
+    tomorrowMorningFallback: null,
+  },
+  calendarActivity: {
+    review: [
+      {
+        sentence:
+          "REI: looks like it's about Camping reservation rescheduled — review →",
+        href: "https://mail.google.com/mail/u/0/#inbox/abc123",
+      },
+    ],
+    added: [
+      {
+        sentence:
+          "Added Dentist Mon at 9:00a to your calendar (from Smile Dental) →",
+        href: "https://calendar.google.com/event/xyz456",
+      },
+    ],
+    confirmed: [
+      {
+        sentence:
+          "Orlando Health confirmed Dr. Jones visit — already on your calendar",
+        href: "https://calendar.google.com/event/qrs789",
+      },
+    ],
+  },
   urgent: [
     {
       subject: "Re: Q3 contract — need final pricing today",
