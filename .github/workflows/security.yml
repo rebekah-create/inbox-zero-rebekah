@@ -22,10 +22,10 @@ jobs:
     name: gitleaks (secrets)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -33,9 +33,22 @@ jobs:
     name: trivy (deps + IaC)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.35.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      # Always visible in the Actions log -- works on every repo regardless of plan.
+      - name: Trivy (table output to log)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # 0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+
+      # SARIF for the Security tab -- only writes if upload succeeds.
+      - name: Trivy (SARIF for Security tab)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # 0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -43,10 +56,14 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-results.sarif
-          exit-code: "0"  # don't fail PRs on findings; review in Security tab
-      - name: Upload Trivy results to GitHub Security
+          exit-code: "0"
+
+      # Private repos without GitHub Advanced Security can't accept SARIF uploads.
+      # continue-on-error keeps the workflow green; findings still live in the log step above.
+      - name: Upload SARIF to GitHub Security
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@03e4368ac7daa2bd82b3e85262f3bf87ee112f57  # v3
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
