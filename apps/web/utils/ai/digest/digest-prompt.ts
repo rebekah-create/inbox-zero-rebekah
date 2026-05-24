@@ -83,8 +83,7 @@ function renderBucket(name: string, items: BucketItem[]): string {
 function renderAgenda(items: AgendaCompactItem[]): string {
   if (!items.length) return "### AGENDA\n(nothing on the calendar)\n";
   const lines = items.map(
-    (i) =>
-      `- [${i.day}] ${i.isAllDay ? "(all-day)" : i.time} ${i.title}`,
+    (i) => `- [${i.day}] ${i.isAllDay ? "(all-day)" : i.time} ${i.title}`,
   );
   return `### AGENDA\n${lines.join("\n")}\n`;
 }

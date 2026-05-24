@@ -108,7 +108,12 @@ describe("candidateEventSchema", () => {
       string,
       unknown
     >;
-    const banned = ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"];
+    const banned = [
+      "minimum",
+      "maximum",
+      "exclusiveMinimum",
+      "exclusiveMaximum",
+    ];
     const findBanned = (node: unknown, path: string): string[] => {
       if (!node || typeof node !== "object") return [];
       const obj = node as Record<string, unknown>;
