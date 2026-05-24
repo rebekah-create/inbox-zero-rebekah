@@ -14,6 +14,9 @@ vi.mock("@/utils/prisma", () => ({
     calendarConnection: {
       findFirst: vi.fn(),
     },
+    calendar: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -130,6 +133,9 @@ describe("getUpcomingEvents", () => {
     vi.mocked(prisma.calendarConnection.findFirst).mockResolvedValue(
       makeConnectionRow() as any,
     );
+    // Default: no Calendar rows → falls back to ["primary"], preserving the
+    // legacy single-calendar behavior the bulk of these tests assert.
+    vi.mocked(prisma.calendar.findMany).mockResolvedValue([] as any);
   });
 
   // Test 1
@@ -502,5 +508,169 @@ describe("getUpcomingEvents", () => {
       }),
     ]);
     expect(listMock.mock.calls.length).toBe(2);
+  });
+
+  // Test 19 — multi-calendar fan-out (regression for the May 24 2026 digest
+  // bug where Memorial Day [holidays calendar] and Ninja class [kids calendar]
+  // were silently dropped because we only queried `primary`).
+  it("fans out events.list across every enabled Calendar row for the connection", async () => {
+    vi.mocked(prisma.calendar.findMany).mockResolvedValue([
+      { calendarId: "primary" },
+      { calendarId: "en.usa#holiday@group.v.calendar.google.com" },
+      { calendarId: "kids-calendar-id@group.calendar.google.com" },
+    ] as any);
+    const listMock = vi
+      .fn()
+      .mockImplementation(async ({ calendarId }: { calendarId: string }) => {
+        if (calendarId === "primary") {
+          return {
+            data: {
+              items: [
+                makeEvent({ id: "primary-evt", selfResponse: "accepted" }),
+              ],
+            },
+          };
+        }
+        if (calendarId === "en.usa#holiday@group.v.calendar.google.com") {
+          return {
+            data: {
+              items: [
+                makeEvent({
+                  id: "holiday-evt",
+                  isAllDay: true,
+                  summary: "Memorial Day",
+                }),
+              ],
+            },
+          };
+        }
+        if (calendarId === "kids-calendar-id@group.calendar.google.com") {
+          return {
+            data: {
+              items: [
+                makeEvent({
+                  id: "kids-evt",
+                  summary: "Ninja class",
+                  selfResponse: "accepted",
+                }),
+              ],
+            },
+          };
+        }
+        return { data: { items: [] } };
+      });
+    vi.mocked(getCalendarClientWithRefresh).mockResolvedValue({
+      events: { list: listMock },
+    } as unknown as calendar_v3.Calendar);
+
+    const result = await getUpcomingEvents({
+      emailAccountId: EMAIL_ACCOUNT_ID,
+      now: NOW,
+      logger: makeMockLogger(),
+    });
+
+    expect(listMock).toHaveBeenCalledTimes(3);
+    expect(result.map((e) => e.id).sort()).toEqual([
+      "holiday-evt",
+      "kids-evt",
+      "primary-evt",
+    ]);
+  });
+
+  // Test 20 — one bad calendar must not blank the whole digest.
+  it("returns events from healthy calendars when one calendar's events.list throws", async () => {
+    vi.mocked(prisma.calendar.findMany).mockResolvedValue([
+      { calendarId: "primary" },
+      { calendarId: "broken@group.calendar.google.com" },
+    ] as any);
+    const listMock = vi
+      .fn()
+      .mockImplementation(async ({ calendarId }: { calendarId: string }) => {
+        if (calendarId === "broken@group.calendar.google.com") {
+          throw new Error("Google 403 on this calendar");
+        }
+        return {
+          data: {
+            items: [makeEvent({ id: "ok", selfResponse: "accepted" })],
+          },
+        };
+      });
+    vi.mocked(getCalendarClientWithRefresh).mockResolvedValue({
+      events: { list: listMock },
+    } as unknown as calendar_v3.Calendar);
+
+    const logger = makeMockLogger();
+    const result = await getUpcomingEvents({
+      emailAccountId: EMAIL_ACCOUNT_ID,
+      now: NOW,
+      logger,
+    });
+
+    expect(result.map((e) => e.id)).toEqual(["ok"]);
+    // One per-calendar warn for the failure; no top-level warn.
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  // Test 21 — when EVERY calendar throws, fall through to the stale envelope
+  // instead of caching an empty result.
+  it("falls back to stale envelope when every enabled calendar's events.list throws", async () => {
+    vi.mocked(prisma.calendar.findMany).mockResolvedValue([
+      { calendarId: "a@group.calendar.google.com" },
+      { calendarId: "b@group.calendar.google.com" },
+    ] as any);
+    const staleEnvelope: CalendarCacheEnvelope = {
+      data: [
+        {
+          id: "stale-future",
+          title: "Stale future",
+          start: new Date(NOW_MS + 60 * 60_000).toISOString(),
+          end: new Date(NOW_MS + 90 * 60_000).toISOString(),
+          isAllDay: false,
+          location: null,
+          description: null,
+          attendees: [],
+          htmlLink: "",
+        },
+      ],
+      fetchedAt: NOW_MS - 20 * 60 * 1000,
+    };
+    vi.mocked(redis.get).mockResolvedValue(staleEnvelope as any);
+    const listMock = vi.fn().mockRejectedValue(new Error("Google down"));
+    vi.mocked(getCalendarClientWithRefresh).mockResolvedValue({
+      events: { list: listMock },
+    } as unknown as calendar_v3.Calendar);
+
+    const result = await getUpcomingEvents({
+      emailAccountId: EMAIL_ACCOUNT_ID,
+      now: NOW,
+      logger: makeMockLogger(),
+    });
+    expect(result.map((e) => e.id)).toEqual(["stale-future"]);
+    // Crucially: the empty result was NOT written to cache.
+    expect(redis.set).not.toHaveBeenCalled();
+  });
+
+  // Test 22 — dedupe across calendars (defensive — Google IDs are
+  // calendar-scoped, but shared/imported calendars can produce duplicates).
+  it("dedupes events by id when the same id appears across calendars", async () => {
+    vi.mocked(prisma.calendar.findMany).mockResolvedValue([
+      { calendarId: "a@group.calendar.google.com" },
+      { calendarId: "b@group.calendar.google.com" },
+    ] as any);
+    const listMock = vi.fn().mockImplementation(async () => ({
+      data: {
+        items: [makeEvent({ id: "shared", selfResponse: "accepted" })],
+      },
+    }));
+    vi.mocked(getCalendarClientWithRefresh).mockResolvedValue({
+      events: { list: listMock },
+    } as unknown as calendar_v3.Calendar);
+
+    const result = await getUpcomingEvents({
+      emailAccountId: EMAIL_ACCOUNT_ID,
+      now: NOW,
+      logger: makeMockLogger(),
+    });
+    expect(result.map((e) => e.id)).toEqual(["shared"]);
   });
 });
