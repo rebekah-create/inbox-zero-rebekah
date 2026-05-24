@@ -1,10 +1,10 @@
 import type { NormalizedCalendarEvent } from "@/utils/calendar/upcoming-events-types";
 
 /**
- * D-04 agenda window filters.
+ * Agenda window filters.
  *
- *  - windowToday:           [now, midnight-ET-of-today)
- *  - windowTomorrowMorning: [6am ET tomorrow, noon ET tomorrow)
+ *  - windowToday:    [now, midnight-ET-of-today)
+ *  - windowTomorrow: all events whose ET-day matches tomorrow's ET date string
  *
  * Both branch on `isAllDay` first (Pattern S5) — all-day events use the
  * `YYYY-MM-DD` date string directly; timed events use RFC3339 instants.
@@ -94,7 +94,14 @@ export function windowToday({
   return sortByStartAsc(kept);
 }
 
-export function windowTomorrowMorning({
+/**
+ * All events on the ET-day of `tomorrow` — full day, no time-of-day filter.
+ *
+ *  - All-day events: keep if `event.start === tomorrowYmd`.
+ *  - Timed events: keep if the event's ET-day at its start equals tomorrowYmd.
+ *    (Timed events that cross midnight are categorised by their start day.)
+ */
+export function windowTomorrow({
   events,
   now,
 }: {
@@ -102,17 +109,19 @@ export function windowTomorrowMorning({
   now: Date;
 }): NormalizedCalendarEvent[] {
   const tomorrowYmd = etTomorrowDateString(now);
-  const sixAm = etBoundaryFromYmd(tomorrowYmd, 6);
-  const noon = etBoundaryFromYmd(tomorrowYmd, 12);
+  const ymdFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ET,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 
   const kept = events.filter((event) => {
     if (event.isAllDay) {
       return event.start === tomorrowYmd;
     }
-    const startMs = new Date(event.start).getTime();
-    const endMs = new Date(event.end).getTime();
-    // D-04: timed event whose start < noon-ET-tomorrow AND end > 6am-ET-tomorrow.
-    return startMs < noon.getTime() && endMs > sixAm.getTime();
+    const startEtYmd = ymdFormatter.format(new Date(event.start));
+    return startEtYmd === tomorrowYmd;
   });
 
   return sortByStartAsc(kept);

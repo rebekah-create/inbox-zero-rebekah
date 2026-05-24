@@ -22,22 +22,30 @@ import {
  *   1. Read Redis envelope (best-effort; tolerate outage).
  *   2. Fresh hit (< FRESH_MS old) → return cached, no Google call.
  *   3. Cache miss / stale → load CalendarConnection from Postgres.
- *   4. Call client.events.list directly (preserves responseStatus + all-day flag
- *      — do NOT route through GoogleCalendarEventProvider, see plan note).
- *   5. Filter declined/tentative via isExcluded; map raw events through normalize.
- *   6. Write envelope to Redis with 24h hard TTL (best-effort).
- *   7. Return pastPrune(normalized, now).
- *   8. On any live-fetch failure: if envelope present, return pruned stale data;
- *      otherwise return []. Always logger.warn with structured fields only
- *      (never include event titles, descriptions, attendees, tokens — see D-11
- *      and threat T-08-03).
+ *   4. Load enabled Calendar rows for the connection. Each row holds a
+ *      Google calendarId synced at OAuth time. Call client.events.list for
+ *      every enabled calendar in parallel (preserves responseStatus +
+ *      all-day flag — do NOT route through GoogleCalendarEventProvider,
+ *      see plan note). If a single calendar's API call fails, log and skip
+ *      it; other calendars still contribute.
+ *   5. If no Calendar rows exist (legacy connection that predates sync),
+ *      fall back to a single `calendarId: "primary"` call so the digest
+ *      still works.
+ *   6. Concatenate items across calendars, filter declined/tentative via
+ *      isExcluded, map through normalize, dedupe by event id.
+ *   7. Write envelope to Redis with 24h hard TTL (best-effort).
+ *   8. Return pastPrune(normalized, now).
+ *   9. On any live-fetch failure (auth / network / all calendars failed):
+ *      if envelope present, return pruned stale data; otherwise return [].
+ *      Always logger.warn with structured fields only (never include event
+ *      titles, descriptions, attendees, tokens — see D-11 and threat T-08-03).
  */
 
 export const UPCOMING_EVENTS_CACHE_PREFIX = "calendar:events:";
 const FRESH_MS = 15 * 60 * 1000; // D-05 soft expiry
 const HARD_TTL_S = 24 * 60 * 60; // 24h hard TTL — stale-fallback window
 const LOOKAHEAD_DAYS = 7;
-const MAX_RESULTS = 250;
+const MAX_RESULTS_PER_CALENDAR = 250;
 
 export async function getUpcomingEvents({
   emailAccountId,
@@ -100,19 +108,69 @@ export async function getUpcomingEvents({
       logger,
     });
 
-    const response = await client.events.list({
-      calendarId: "primary",
-      timeMin: now.toISOString(),
-      timeMax: addDays(now, LOOKAHEAD_DAYS).toISOString(),
-      maxResults: MAX_RESULTS,
-      singleEvents: true,
-      orderBy: "startTime",
+    // Enabled calendars synced at OAuth time. Legacy connections (pre-sync)
+    // have zero rows here; fall back to `primary` so the digest still works.
+    const enabledCalendars = await prisma.calendar.findMany({
+      where: { connectionId: connection.id, isEnabled: true },
+      select: { calendarId: true },
     });
+    const calendarIds =
+      enabledCalendars.length > 0
+        ? enabledCalendars.map((c) => c.calendarId)
+        : ["primary"];
 
-    const items = response.data.items ?? [];
-    const normalized: NormalizedCalendarEvent[] = items
-      .filter((event) => hasStartAndEnd(event) && !isExcluded(event))
-      .map((event) => normalize(event));
+    const timeMin = now.toISOString();
+    const timeMax = addDays(now, LOOKAHEAD_DAYS).toISOString();
+
+    const perCalendarResults = await Promise.all(
+      calendarIds.map(async (calendarId) => {
+        try {
+          const response = await client.events.list({
+            calendarId,
+            timeMin,
+            timeMax,
+            maxResults: MAX_RESULTS_PER_CALENDAR,
+            singleEvents: true,
+            orderBy: "startTime",
+          });
+          return {
+            ok: true as const,
+            items: response.data.items ?? [],
+          };
+        } catch (err) {
+          // One calendar failing must not blank the whole digest. The
+          // calendarId itself is fine to log (it's not a secret — it's the
+          // group address Google issues). Surface count of failures back to
+          // the caller to decide stale-fallback behavior.
+          logger.warn("Calendar events.list failed for one calendar", {
+            emailAccountId,
+            calendarId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return { ok: false as const, items: [] };
+        }
+      }),
+    );
+
+    const anySucceeded = perCalendarResults.some((r) => r.ok);
+    if (!anySucceeded && calendarIds.length > 0) {
+      // Every calendar call failed. Treat as a live-fetch failure so the
+      // outer catch's stale-fallback path runs, instead of caching an empty
+      // envelope and overwriting good stale data.
+      throw new Error("All calendar events.list calls failed");
+    }
+
+    const mergedItems = perCalendarResults.flatMap((r) => r.items);
+
+    const seen = new Set<string>();
+    const normalized: NormalizedCalendarEvent[] = [];
+    for (const event of mergedItems) {
+      if (!hasStartAndEnd(event) || isExcluded(event)) continue;
+      const n = normalize(event);
+      if (!n.id || seen.has(n.id)) continue;
+      seen.add(n.id);
+      normalized.push(n);
+    }
 
     try {
       await redis.set(

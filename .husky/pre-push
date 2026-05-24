@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 if ! command -v gitleaks >/dev/null 2>&1; then
   echo "Skipping gitleaks pre-push scan because gitleaks is not installed."
   echo "Install gitleaks locally to enable secret scanning on push."

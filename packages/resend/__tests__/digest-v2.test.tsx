@@ -99,7 +99,7 @@ describe("digest-v2.tsx prop-driven render", () => {
   it("renders unchanged Phase 4 layout when agenda + calendarActivity are absent (D-03)", async () => {
     const html = await render(<DigestV2Email {...fixture} />);
     expect(html).not.toContain(">TODAY<");
-    expect(html).not.toContain(">TOMORROW MORNING<");
+    expect(html).not.toContain(">TOMORROW<");
     expect(html).not.toContain(">Calendar Activity<");
   });
 });
@@ -135,7 +135,16 @@ describe("DigestV2Email — Phase 10 sections", () => {
         overlapWith: [],
       },
     ],
-    tomorrowMorning: [
+    tomorrow: [
+      {
+        id: "evt-md",
+        time: "All day",
+        endTime: null,
+        title: "Memorial Day",
+        location: null,
+        isAllDay: true,
+        overlapWith: [],
+      },
       {
         id: "evt-4",
         time: "8:00a",
@@ -145,9 +154,18 @@ describe("DigestV2Email — Phase 10 sections", () => {
         isAllDay: false,
         overlapWith: [],
       },
+      {
+        id: "evt-5",
+        time: "4:30p",
+        endTime: "5:30p",
+        title: "Ninja class",
+        location: null,
+        isAllDay: false,
+        overlapWith: [],
+      },
     ],
     todayFallback: null,
-    tomorrowMorningFallback: null,
+    tomorrowFallback: null,
   };
 
   const calendarActivityFixture: CalendarActivityBlock = {
@@ -179,10 +197,13 @@ describe("DigestV2Email — Phase 10 sections", () => {
       <DigestV2Email {...fixture} agenda={agendaFixture} />,
     );
     expect(html).toContain("TODAY");
-    expect(html).toContain("TOMORROW MORNING");
+    expect(html).toContain("TOMORROW");
     expect(html).toContain("Pediatrician visit");
     expect(html).toContain("Camp pickup");
     expect(html).toContain("Dentist");
+    expect(html).toContain("Ninja class");
+    expect(html).toContain("Memorial Day");
+    expect(html).toContain("All day");
   });
 
   it("renders overlap pill on overlapping rows in TODAY's agenda (D-09)", async () => {
@@ -195,9 +216,9 @@ describe("DigestV2Email — Phase 10 sections", () => {
   it("renders empty-day fallback when today is empty and fallback string is provided (D-05)", async () => {
     const emptyAgenda: AgendaBlock = {
       today: [],
-      tomorrowMorning: [],
+      tomorrow: [],
       todayFallback: "Nothing else on the calendar today.",
-      tomorrowMorningFallback: "Nothing on the calendar tomorrow.",
+      tomorrowFallback: "Nothing on the calendar tomorrow.",
     };
     const html = await render(
       <DigestV2Email {...fixture} agenda={emptyAgenda} />,

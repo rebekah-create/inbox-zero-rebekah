@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 // Mocks must be declared before SUT import.
 const mockGenerateObject = vi.fn();
@@ -82,12 +83,50 @@ describe("candidateEventSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects confidence > 1", () => {
-    const result = candidateEventSchema.safeParse({
-      ...VALID_CANDIDATE,
-      confidence: 1.5,
-    });
-    expect(result.success).toBe(false);
+  it("accepts confidence outside [0, 1] at the schema layer (clamping happens in extractCandidateEvent)", () => {
+    // Anthropic's structured-output validator rejects min/max on number, so we
+    // can't enforce the 0..1 range in the schema. The contract is documented
+    // via .describe() to the model and the clamp lives in extractCandidateEvent.
+    expect(
+      candidateEventSchema.safeParse({ ...VALID_CANDIDATE, confidence: 1.5 })
+        .success,
+    ).toBe(true);
+    expect(
+      candidateEventSchema.safeParse({ ...VALID_CANDIDATE, confidence: -0.2 })
+        .success,
+    ).toBe(true);
+  });
+
+  it("emits a JSON Schema with no numeric range constraints (Anthropic structured-output compat)", () => {
+    // Regression guard for the bug where `confidence: z.number().min(0).max(1)`
+    // caused every reconciliation call in prod to fail with:
+    //   output_config.format.schema: For 'number' type, properties maximum,
+    //   minimum are not supported
+    // If anyone re-introduces .min/.max/.lt/.gt on a number field in this
+    // schema, this test will fail before it reaches prod.
+    const json = z.toJSONSchema(candidateEventSchema) as Record<
+      string,
+      unknown
+    >;
+    const banned = [
+      "minimum",
+      "maximum",
+      "exclusiveMinimum",
+      "exclusiveMaximum",
+    ];
+    const findBanned = (node: unknown, path: string): string[] => {
+      if (!node || typeof node !== "object") return [];
+      const obj = node as Record<string, unknown>;
+      const hits: string[] = [];
+      for (const key of banned) {
+        if (key in obj) hits.push(`${path}.${key}`);
+      }
+      for (const [k, v] of Object.entries(obj)) {
+        hits.push(...findBanned(v, `${path}.${k}`));
+      }
+      return hits;
+    };
+    expect(findBanned(json, "$")).toEqual([]);
   });
 
   it("rejects attendees: null (must be array)", () => {
@@ -208,6 +247,45 @@ describe("extractCandidateEvent", () => {
     expect(systemMsg.providerOptions?.anthropic?.cacheControl?.type).toBe(
       "ephemeral",
     );
+  });
+
+  it("clamps confidence > 1 down to 1", async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({
+      object: { ...VALID_CANDIDATE, confidence: 1.7 },
+    });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.confidence).toBe(1);
+  });
+
+  it("clamps confidence < 0 up to 0", async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({
+      object: { ...VALID_CANDIDATE, confidence: -0.4 },
+    });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.confidence).toBe(0);
+  });
+
+  it("coerces non-finite confidence to 0", async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({
+      object: { ...VALID_CANDIDATE, confidence: Number.NaN },
+    });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.confidence).toBe(0);
   });
 
   it("returns plain string system when provider is not anthropic", async () => {

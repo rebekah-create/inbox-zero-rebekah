@@ -64,11 +64,11 @@ export type AgendaItem = {
 
 export type AgendaBlock = {
   today: AgendaItem[];
-  tomorrowMorning: AgendaItem[];
-  /** D-05 fallback copy when today has no events; null otherwise. */
+  tomorrow: AgendaItem[];
+  /** Fallback copy when today has no events; null otherwise. */
   todayFallback: string | null;
-  /** D-05 fallback copy when tomorrow morning has no events; null otherwise. */
-  tomorrowMorningFallback: string | null;
+  /** Fallback copy when tomorrow has no events; null otherwise. */
+  tomorrowFallback: string | null;
 };
 
 export type CalendarActivityRow = {
@@ -267,9 +267,9 @@ function AgendaSection({ agenda }: { agenda: AgendaBlock }) {
         fallback={agenda.todayFallback}
       />
       <AgendaDayBlock
-        heading="TOMORROW MORNING"
-        items={agenda.tomorrowMorning}
-        fallback={agenda.tomorrowMorningFallback}
+        heading="TOMORROW"
+        items={agenda.tomorrow}
+        fallback={agenda.tomorrowFallback}
       />
     </Section>
   );
@@ -510,7 +510,16 @@ DigestV2Email.PreviewProps = {
         overlapWith: [],
       },
     ],
-    tomorrowMorning: [
+    tomorrow: [
+      {
+        id: "evt-tomorrow-allday",
+        time: "All day",
+        endTime: null,
+        title: "Memorial Day",
+        location: null,
+        isAllDay: true,
+        overlapWith: [],
+      },
       {
         id: "evt-tomorrow-1",
         time: "8:30a",
@@ -520,9 +529,18 @@ DigestV2Email.PreviewProps = {
         isAllDay: false,
         overlapWith: [],
       },
+      {
+        id: "evt-tomorrow-2",
+        time: "4:30p",
+        endTime: "5:30p",
+        title: "Ninja class",
+        location: null,
+        isAllDay: false,
+        overlapWith: [],
+      },
     ],
     todayFallback: null,
-    tomorrowMorningFallback: null,
+    tomorrowFallback: null,
   },
   calendarActivity: {
     review: [

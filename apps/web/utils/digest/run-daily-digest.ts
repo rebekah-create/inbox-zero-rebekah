@@ -350,11 +350,13 @@ export async function runDailyDigest(logger: Logger) {
           day: "today" as const,
           time: i.time,
           title: i.title,
+          isAllDay: i.isAllDay,
         })),
-        ...agenda.tomorrowMorning.map((i) => ({
+        ...agenda.tomorrow.map((i) => ({
           day: "tomorrow" as const,
           time: i.time,
           title: i.title,
+          isAllDay: i.isAllDay,
         })),
       ];
       const reconciliationsCompact = reconciliations.map((r) => ({

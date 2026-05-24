@@ -27,8 +27,19 @@ describe("buildDigestPrompt — Phase 10 extensions", () => {
 
   it("includes ### AGENDA section with formatted items when agendaCompact is non-empty", () => {
     const agendaCompact: AgendaCompactItem[] = [
-      { day: "today", time: "9:00a", title: "Standup" },
-      { day: "tomorrow", time: "8:30a", title: "Pediatrician" },
+      { day: "today", time: "9:00a", title: "Standup", isAllDay: false },
+      {
+        day: "tomorrow",
+        time: "8:30a",
+        title: "Pediatrician",
+        isAllDay: false,
+      },
+      {
+        day: "tomorrow",
+        time: "All day",
+        title: "Memorial Day",
+        isAllDay: true,
+      },
     ];
     const prompt = buildDigestPrompt({
       todayDate: "Tuesday, May 21",
@@ -38,6 +49,7 @@ describe("buildDigestPrompt — Phase 10 extensions", () => {
     expect(prompt).toContain("### AGENDA");
     expect(prompt).toContain("- [today] 9:00a Standup");
     expect(prompt).toContain("- [tomorrow] 8:30a Pediatrician");
+    expect(prompt).toContain("- [tomorrow] (all-day) Memorial Day");
   });
 
   it("includes ### RECONCILIATIONS section with empty placeholder when empty", () => {
@@ -76,15 +88,36 @@ describe("buildDigestPrompt — Phase 10 extensions", () => {
     });
 
     const agendaCompact: AgendaCompactItem[] = [
-      { day: "today", time: "9:00a", title: "Annual physical with Dr. Smith" },
-      { day: "today", time: "12:30p", title: "Lunch with marketing team lead" },
-      { day: "today", time: "3:00p", title: "Quarterly review presentation" },
+      {
+        day: "today",
+        time: "9:00a",
+        title: "Annual physical with Dr. Smith",
+        isAllDay: false,
+      },
+      {
+        day: "today",
+        time: "12:30p",
+        title: "Lunch with marketing team lead",
+        isAllDay: false,
+      },
+      {
+        day: "today",
+        time: "3:00p",
+        title: "Quarterly review presentation",
+        isAllDay: false,
+      },
       {
         day: "tomorrow",
         time: "8:00a",
         title: "Pediatric dentist appointment",
+        isAllDay: false,
       },
-      { day: "tomorrow", time: "10:30a", title: "Camping gear pickup at REI" },
+      {
+        day: "tomorrow",
+        time: "10:30a",
+        title: "Camping gear pickup at REI",
+        isAllDay: false,
+      },
     ];
     const reconciliationsCompact: ReconciliationCompactItem[] = [
       {
