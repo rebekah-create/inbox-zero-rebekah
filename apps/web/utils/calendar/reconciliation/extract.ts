@@ -39,12 +39,14 @@ export const candidateEventSchema = z.object({
     .describe(
       "Email addresses literally present in the body. Empty array if none — do not invent.",
     ),
+  // Intentionally NO .min/.max — Anthropic's structured-output validator rejects
+  // numeric range constraints with "output_config.format.schema: For 'number'
+  // type, properties maximum, minimum are not supported". The 0..1 contract is
+  // documented in `.describe()` and enforced by the clamp at the call site.
   confidence: z
     .number()
-    .min(0)
-    .max(1)
     .describe(
-      "0 = body had no real event. 1 = unambiguous. ≤ 0.5 if uncertain.",
+      "Number between 0 and 1. 0 = body had no real event. 1 = unambiguous. ≤ 0.5 if uncertain.",
     ),
   isAllDay: z
     .boolean()
@@ -111,5 +113,13 @@ ${email.bodyTruncated}
     maxOutputTokens: 400,
   });
 
-  return result.object;
+  // Clamp confidence to [0, 1]. The model is asked for that range via the
+  // schema's `.describe()`, but the schema no longer enforces it (see comment
+  // on `confidence` above). Downstream code in decideOutcome assumes the range.
+  const rawConfidence = result.object.confidence;
+  const confidence = Number.isFinite(rawConfidence)
+    ? Math.min(1, Math.max(0, rawConfidence))
+    : 0;
+
+  return { ...result.object, confidence };
 }

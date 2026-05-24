@@ -87,8 +87,8 @@ describe("buildAgenda — Today section", () => {
   });
 });
 
-describe("buildAgenda — Tomorrow morning section + D-05 extender", () => {
-  it("emits the extender fallback when morning empty but afternoon event exists tomorrow", () => {
+describe("buildAgenda — Tomorrow section (full day)", () => {
+  it("includes an afternoon event tomorrow — no morning/extender split", () => {
     // Tomorrow 14:00 EDT (afternoon) -> 2026-05-21T18:00:00Z
     const events = [
       timed(
@@ -99,28 +99,47 @@ describe("buildAgenda — Tomorrow morning section + D-05 extender", () => {
       ),
     ];
     const block = buildAgenda({ events, now: NOW });
-    expect(block.tomorrowMorning).toEqual([]);
-    // formatAgendaTime("2026-05-21T18:00:00Z", false) -> "2:00p"
-    expect(block.tomorrowMorningFallback).toBe(
-      "Nothing before noon; first thing is 2:00p Afternoon mtg.",
-    );
+    expect(block.tomorrow.map((i) => i.id)).toEqual(["after"]);
+    expect(block.tomorrowFallback).toBeNull();
   });
 
-  it("emits the D-05 'Nothing on the calendar tomorrow.' fallback when no events all day tomorrow", () => {
-    const block = buildAgenda({ events: [], now: NOW });
-    expect(block.tomorrowMorning).toEqual([]);
-    expect(block.tomorrowMorningFallback).toBe(
-      "Nothing on the calendar tomorrow.",
-    );
-  });
-
-  it("clears tomorrowMorningFallback when morning has events", () => {
+  it("includes an evening event tomorrow (e.g. Ninja class 5pm)", () => {
     const events = [
-      // Tomorrow 07:00-08:00 EDT
-      timed("run", "Run", "2026-05-21T11:00:00Z", "2026-05-21T12:00:00Z"),
+      timed(
+        "ninja",
+        "Ninja class",
+        "2026-05-21T21:00:00Z", // 17:00 EDT
+        "2026-05-21T22:00:00Z", // 18:00 EDT
+      ),
     ];
     const block = buildAgenda({ events, now: NOW });
-    expect(block.tomorrowMorning.map((i) => i.id)).toEqual(["run"]);
-    expect(block.tomorrowMorningFallback).toBeNull();
+    expect(block.tomorrow.map((i) => i.title)).toEqual(["Ninja class"]);
+    expect(block.tomorrowFallback).toBeNull();
+  });
+
+  it("emits 'Nothing on the calendar tomorrow.' when truly empty", () => {
+    const block = buildAgenda({ events: [], now: NOW });
+    expect(block.tomorrow).toEqual([]);
+    expect(block.tomorrowFallback).toBe("Nothing on the calendar tomorrow.");
+  });
+
+  it("renders an all-day event (Memorial Day) at the top with time='All day'", () => {
+    const events = [
+      allDay("md", "Memorial Day", "2026-05-21"),
+      timed(
+        "ninja",
+        "Ninja class",
+        "2026-05-21T21:00:00Z",
+        "2026-05-21T22:00:00Z",
+      ),
+    ];
+    const block = buildAgenda({ events, now: NOW });
+    expect(block.tomorrow.map((i) => i.title)).toEqual([
+      "Memorial Day",
+      "Ninja class",
+    ]);
+    expect(block.tomorrow[0]!.time).toBe("All day");
+    expect(block.tomorrow[0]!.isAllDay).toBe(true);
+    expect(block.tomorrowFallback).toBeNull();
   });
 });

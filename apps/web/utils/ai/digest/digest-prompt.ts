@@ -37,6 +37,7 @@ LENGTH BUDGET
 AGENDA + RECONCILIATIONS HANDLING
 - Only reference events / reconciliations present in the AGENDA and RECONCILIATIONS blocks. Do not infer, summarize counts you can't see, or extrapolate.
 - Weave 1-2 references in naturally if they fit the morning's narrative; never enumerate them.
+- All-day items in AGENDA are marked "(all-day)" instead of a time. If one is a recognizable holiday or birthday, a quick natural mention is welcome (subject to the solemn-observance rule above).
 - The voice guardrails above (drop humor for grief / serious illness / financial distress / legal threats / family emergencies) apply to AGENDA and RECONCILIATIONS content too.
 
 Output JSON matching the provided schema. memberMessageIds must list every messageId you grouped into the cluster.`;
@@ -61,6 +62,7 @@ export type AgendaCompactItem = {
   day: "today" | "tomorrow";
   time: string;
   title: string;
+  isAllDay: boolean;
 };
 
 export type ReconciliationCompactItem = {
@@ -80,7 +82,10 @@ function renderBucket(name: string, items: BucketItem[]): string {
 
 function renderAgenda(items: AgendaCompactItem[]): string {
   if (!items.length) return "### AGENDA\n(nothing on the calendar)\n";
-  const lines = items.map((i) => `- [${i.day}] ${i.time} ${i.title}`);
+  const lines = items.map(
+    (i) =>
+      `- [${i.day}] ${i.isAllDay ? "(all-day)" : i.time} ${i.title}`,
+  );
   return `### AGENDA\n${lines.join("\n")}\n`;
 }
 

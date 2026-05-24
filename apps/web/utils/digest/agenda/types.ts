@@ -25,9 +25,9 @@ export type AgendaItem = {
 
 export type AgendaBlock = {
   today: AgendaItem[];
-  tomorrowMorning: AgendaItem[];
-  /** D-05 fallback copy when today has no events; null otherwise. */
+  tomorrow: AgendaItem[];
+  /** Fallback copy when today has no events; null otherwise. */
   todayFallback: string | null;
-  /** D-05 fallback copy when tomorrow morning has no events; null otherwise. */
-  tomorrowMorningFallback: string | null;
+  /** Fallback copy when tomorrow has no events; null otherwise. */
+  tomorrowFallback: string | null;
 };

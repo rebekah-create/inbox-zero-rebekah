@@ -146,7 +146,7 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
     expect(call.emailProps.agenda).toBeDefined();
     expect(
       call.emailProps.agenda.today.length +
-        call.emailProps.agenda.tomorrowMorning.length,
+        call.emailProps.agenda.tomorrow.length,
     ).toBeGreaterThanOrEqual(1);
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { NormalizedCalendarEvent } from "@/utils/calendar/upcoming-events-types";
-import { windowToday, windowTomorrowMorning } from "./window";
+import { windowToday, windowTomorrow } from "./window";
 
 const timed = (
   id: string,
@@ -87,8 +87,8 @@ describe("windowToday — D-04 Today window", () => {
   });
 });
 
-describe("windowTomorrowMorning — D-04 Tomorrow morning window", () => {
-  it("includes a timed event tomorrow 7am–8am ET", () => {
+describe("windowTomorrow — full ET-day tomorrow window", () => {
+  it("includes a timed event tomorrow morning (7am–8am ET)", () => {
     const events = [
       timed(
         "e1",
@@ -97,12 +97,12 @@ describe("windowTomorrowMorning — D-04 Tomorrow morning window", () => {
         "2026-05-21T12:00:00Z", // 08:00 EDT
       ),
     ];
-    expect(
-      windowTomorrowMorning({ events, now: NOW }).map((e) => e.id),
-    ).toEqual(["e1"]);
+    expect(windowTomorrow({ events, now: NOW }).map((e) => e.id)).toEqual([
+      "e1",
+    ]);
   });
 
-  it("excludes a timed event tomorrow 1pm–2pm ET (after noon window)", () => {
+  it("includes a timed event tomorrow afternoon (1pm–2pm ET) — full-day window", () => {
     const events = [
       timed(
         "e1",
@@ -111,38 +111,54 @@ describe("windowTomorrowMorning — D-04 Tomorrow morning window", () => {
         "2026-05-21T18:00:00Z", // 14:00 EDT
       ),
     ];
-    expect(windowTomorrowMorning({ events, now: NOW })).toEqual([]);
+    expect(windowTomorrow({ events, now: NOW }).map((e) => e.id)).toEqual([
+      "e1",
+    ]);
   });
 
-  it("includes a timed event tomorrow 11:30am–12:30pm ET (overlaps window)", () => {
+  it("includes a timed event tomorrow evening (8pm–9pm ET)", () => {
     const events = [
       timed(
-        "e1",
-        "Brunch",
-        "2026-05-21T15:30:00Z", // 11:30 EDT
-        "2026-05-21T16:30:00Z", // 12:30 EDT
+        "ninja",
+        "Ninja class",
+        "2026-05-22T00:30:00Z", // 20:30 EDT on 2026-05-21
+        "2026-05-22T01:30:00Z", // 21:30 EDT on 2026-05-21
       ),
     ];
-    expect(
-      windowTomorrowMorning({ events, now: NOW }).map((e) => e.id),
-    ).toEqual(["e1"]);
+    expect(windowTomorrow({ events, now: NOW }).map((e) => e.id)).toEqual([
+      "ninja",
+    ]);
+  });
+
+  it("excludes a timed event for two days from now", () => {
+    const events = [
+      timed(
+        "twoday",
+        "Two days out",
+        "2026-05-22T15:00:00Z",
+        "2026-05-22T16:00:00Z",
+      ),
+    ];
+    expect(windowTomorrow({ events, now: NOW })).toEqual([]);
   });
 
   it("includes an all-day event whose date matches tomorrow ET", () => {
-    const events = [allDay("e1", "School day", "2026-05-21")];
-    expect(
-      windowTomorrowMorning({ events, now: NOW }).map((e) => e.id),
-    ).toEqual(["e1"]);
+    const events = [allDay("e1", "Memorial Day", "2026-05-21")];
+    expect(windowTomorrow({ events, now: NOW }).map((e) => e.id)).toEqual([
+      "e1",
+    ]);
   });
 
-  it("sorts results ascending by start (all-day first, then timed asc)", () => {
+  it("sorts results: all-day first, then timed ascending by start", () => {
     const events = [
-      timed("late", "Late", "2026-05-21T15:00:00Z", "2026-05-21T16:00:00Z"),
+      timed("late", "Late", "2026-05-21T22:00:00Z", "2026-05-21T23:00:00Z"),
       allDay("ad", "All-day", "2026-05-21"),
       timed("early", "Early", "2026-05-21T11:00:00Z", "2026-05-21T12:00:00Z"),
     ];
-    expect(
-      windowTomorrowMorning({ events, now: NOW }).map((e) => e.id),
-    ).toEqual(["ad", "early", "late"]);
+    expect(windowTomorrow({ events, now: NOW }).map((e) => e.id)).toEqual([
+      "ad",
+      "early",
+      "late",
+    ]);
   });
 });
