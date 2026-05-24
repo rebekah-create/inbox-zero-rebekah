@@ -1,3 +1,13 @@
+> **⚠️ This is a personal fork.** Self-hosted single-user deployment for [@rebekah-create](https://github.com/rebekah-create).
+> Signups are locked; this is **not** a maintained public product.
+>
+> Primary divergences from upstream: customized daily digest (narrative voice, feedback loop) and personal-logistics
+> calendar reconciliation. Anthropic-only LLM config. Self-hosted infrastructure (no Vercel/Supabase).
+>
+> 👉 For the real product, go to **[elie222/inbox-zero](https://github.com/elie222/inbox-zero)**.
+
+---
+
 [![](apps/web/app/opengraph-image.jpg)](https://www.getinboxzero.com)
 
 <p align="center">
