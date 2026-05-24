@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
-lint-staged
+pnpm exec lint-staged
 
 gitleaks protect --staged --redact --verbose
