@@ -1,0 +1,5 @@
+# Shell scripts and Husky hooks must use LF or they fail with
+# "/bin/sh^M: bad interpreter" / "Exec format error" on Linux runners
+# and Git for Windows alike.
+*.sh         text eol=lf
+.husky/*     text eol=lf
