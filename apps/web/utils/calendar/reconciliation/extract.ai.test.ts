@@ -15,6 +15,13 @@
  *
  * AI-SPEC §5 Evaluation Strategy + 09-VALIDATION.md Wave 0 requirement.
  * T-09-01 (prompt-injection resistance) is asserted via the adversarial block.
+ *
+ * LOCAL-DEV NOTE: this file may fail at module load on Windows pnpm installs
+ * when `.pnpm/@ai-sdk+gateway@*/node_modules/@ai-sdk/gateway` lands as an
+ * empty dir (a known pnpm flat-store corruption mode). The test code is
+ * fine — CI's fresh install populates the package correctly and runs
+ * green. Repair locally with `pnpm install --force` (or delete the empty
+ * dir and rerun `pnpm install`).
  */
 
 import { readdirSync, readFileSync } from "node:fs";

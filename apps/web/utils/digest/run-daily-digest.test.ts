@@ -1,3 +1,9 @@
+// LOCAL-DEV NOTE: may fail at module load on Windows pnpm installs when
+// `.pnpm/@ai-sdk+gateway@*/node_modules/@ai-sdk/gateway` lands as an empty
+// dir (known pnpm flat-store corruption mode). Test code is fine — CI's
+// fresh install populates the package correctly. Repair with
+// `pnpm install --force` (or delete the empty dir and rerun `pnpm install`).
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "@/utils/__mocks__/prisma";
 import { createScopedLogger } from "@/utils/logger";
