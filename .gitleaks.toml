@@ -17,6 +17,11 @@ paths = [
   '''yarn\.lock$''',
   '''poetry\.lock$''',
   '''uv\.lock$''',
+  '''\.env\.example$''',
+  '''^\.planning/''',
+  '''^\.gsd\.migrating/''',
+  '''^docs/hosting/.*\.mdx?$''',
+  '''^docker-compose\.yml$''',
 ]
 # Lines containing these patterns are parameter NAMES, not secrets.
 regexes = [
