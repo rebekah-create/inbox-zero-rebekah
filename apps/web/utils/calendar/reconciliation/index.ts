@@ -7,6 +7,7 @@ import { getUpcomingEvents } from "@/utils/calendar/upcoming-events";
 import { extractFromIcs } from "./ics-path";
 import { extractCandidateEvent, type CandidateEvent } from "./extract";
 import { decideOutcome } from "./match";
+import { arbitrateOverlap, findTimeOverlaps } from "./arbitrate";
 import { eventSignature } from "./signature";
 import {
   createReconciliationRecord,
@@ -244,7 +245,7 @@ export async function reconcileMessage({
       now,
       logger,
     }).catch(() => []);
-    const { outcome, matchedEventId } = decideOutcome({
+    let { outcome, matchedEventId } = decideOutcome({
       candidate: {
         title: candidate.title,
         startISO: candidate.startISO,
@@ -252,6 +253,58 @@ export async function reconcileMessage({
       },
       existingEvents: upcoming,
     });
+
+    // 5b. Haiku arbitration tie-breaker. The token-Dice matcher reads titles
+    // only; it misses semantic equivalence ("Video visit" vs "Bekah therapy")
+    // and verbose-vs-terse mismatches ("Explorer Art Club | ..." vs "Madi Art
+    // class"). When decideOutcome wants to CREATE but the candidate's start
+    // time overlaps an existing event, ask Haiku to arbitrate.
+    //
+    // Path A (.ics) skips this — ICS gives clean structured data and the
+    // matcher already had authoritative signals.
+    // All-day candidates skip this — match.ts's D-08 branch handles them.
+    if (
+      outcome === "CREATED" &&
+      !pathA &&
+      !isAllDay &&
+      candidate.startISO &&
+      upcoming.length > 0
+    ) {
+      const overlaps = findTimeOverlaps({
+        candidateStartISO: candidate.startISO,
+        existingEvents: upcoming,
+        windowMs: 60 * 60 * 1000,
+      });
+      if (overlaps.length > 0) {
+        try {
+          const arb = await arbitrateOverlap({
+            email: { subject, from: senderEmail, bodyTruncated },
+            candidate: {
+              title: candidate.title,
+              startISO: candidate.startISO,
+            },
+            existingEvents: overlaps,
+            emailAccount,
+            logger,
+          });
+          if (arb.matchedEventId) {
+            outcome = "MATCHED";
+            matchedEventId = arb.matchedEventId;
+          }
+        } catch (arbError) {
+          // Arbitration failed — fall through with original CREATED. Never
+          // let the tie-breaker break the orchestrator (EVT-05).
+          logger.warn("Reconciliation arbitration failed", {
+            emailAccountId,
+            messageId,
+            error:
+              arbError instanceof Error
+                ? arbError.message
+                : String(arbError),
+          });
+        }
+      }
+    }
 
     // 6. Persist MATCHED / AMBIGUOUS outcomes (no Google call).
     if (outcome !== "CREATED") {

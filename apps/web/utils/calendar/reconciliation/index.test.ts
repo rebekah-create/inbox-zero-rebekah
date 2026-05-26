@@ -18,6 +18,10 @@ vi.mock("@/utils/mail", () => ({
 vi.mock("./ics-path", () => ({ extractFromIcs: vi.fn() }));
 vi.mock("./extract", () => ({ extractCandidateEvent: vi.fn() }));
 vi.mock("./match", () => ({ decideOutcome: vi.fn() }));
+vi.mock("./arbitrate", () => ({
+  arbitrateOverlap: vi.fn(),
+  findTimeOverlaps: vi.fn(() => []),
+}));
 vi.mock("./signature", () => ({ eventSignature: vi.fn(() => "sig_abc") }));
 vi.mock("./persist", () => ({
   createReconciliationRecord: vi.fn(),
@@ -32,6 +36,7 @@ import { getUpcomingEvents } from "@/utils/calendar/upcoming-events";
 import { extractFromIcs } from "./ics-path";
 import { extractCandidateEvent } from "./extract";
 import { decideOutcome } from "./match";
+import { arbitrateOverlap, findTimeOverlaps } from "./arbitrate";
 import {
   createReconciliationRecord,
   findExistingReconciliationRecord,
@@ -568,5 +573,163 @@ describe("reconcileMessage", () => {
     expect(extractCandidateEvent).not.toHaveBeenCalled();
     const decideCall = vi.mocked(decideOutcome).mock.calls[0]?.[0];
     expect(decideCall?.candidate.isAllDay).toBe(true);
+  });
+
+  // =======================================================================
+  // Haiku arbitration tie-breaker (post-Phase-9 add-on)
+  // =======================================================================
+  it("Arbitrate-1: CREATED + time-overlap → Haiku matches existing event → MATCHED, no Google insert", async () => {
+    const overlap = {
+      id: "existing_evt_1",
+      title: "Bekah therapy",
+      description: null,
+      location: null,
+      start: "2026-06-01T15:00:00-04:00",
+      end: "2026-06-01T16:00:00-04:00",
+      isAllDay: false,
+      attendees: [],
+      htmlLink: "",
+    };
+    vi.mocked(getUpcomingEvents).mockResolvedValue([overlap]);
+    vi.mocked(findTimeOverlaps).mockReturnValue([overlap]);
+    vi.mocked(arbitrateOverlap).mockResolvedValue({
+      matchedEventId: "existing_evt_1",
+    });
+
+    await reconcileMessage({
+      parsedMessage: makeMessage({ subject: "Video visit reminder" }),
+      emailAccount,
+      emailAccountId: "acct_1",
+      logger: makeLogger(),
+    });
+
+    expect(arbitrateOverlap).toHaveBeenCalledOnce();
+    expect(createCalendarEvent).not.toHaveBeenCalled();
+    expect(updateReconciliationRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          outcome: "MATCHED",
+          googleEventId: "existing_evt_1",
+        }),
+      }),
+    );
+  });
+
+  it("Arbitrate-2: CREATED + time-overlap → Haiku returns null → original CREATED proceeds", async () => {
+    const overlap = {
+      id: "existing_evt_unrelated",
+      title: "Walmart pickup",
+      description: null,
+      location: null,
+      start: "2026-06-01T15:00:00-04:00",
+      end: "2026-06-01T16:00:00-04:00",
+      isAllDay: false,
+      attendees: [],
+      htmlLink: "",
+    };
+    vi.mocked(getUpcomingEvents).mockResolvedValue([overlap]);
+    vi.mocked(findTimeOverlaps).mockReturnValue([overlap]);
+    vi.mocked(arbitrateOverlap).mockResolvedValue({ matchedEventId: null });
+
+    await reconcileMessage({
+      parsedMessage: makeMessage({ subject: "Appointment reminder" }),
+      emailAccount,
+      emailAccountId: "acct_1",
+      logger: makeLogger(),
+    });
+
+    expect(arbitrateOverlap).toHaveBeenCalledOnce();
+    expect(createCalendarEvent).toHaveBeenCalledOnce();
+  });
+
+  it("Arbitrate-3: CREATED with no time-overlap → arbitrate NOT called", async () => {
+    vi.mocked(getUpcomingEvents).mockResolvedValue([
+      {
+        id: "other",
+        title: "Far",
+        description: null,
+        location: null,
+        start: "2026-06-05T15:00:00-04:00",
+        end: "2026-06-05T16:00:00-04:00",
+        isAllDay: false,
+        attendees: [],
+        htmlLink: "",
+      },
+    ]);
+    vi.mocked(findTimeOverlaps).mockReturnValue([]); // pre-filter says nothing nearby
+
+    await reconcileMessage({
+      parsedMessage: makeMessage({ subject: "Appointment reminder" }),
+      emailAccount,
+      emailAccountId: "acct_1",
+      logger: makeLogger(),
+    });
+
+    expect(arbitrateOverlap).not.toHaveBeenCalled();
+    expect(createCalendarEvent).toHaveBeenCalledOnce();
+  });
+
+  it("Arbitrate-4: Path A (.ics) skips arbitration even when overlaps exist", async () => {
+    vi.mocked(extractFromIcs).mockReturnValue({
+      ...defaultCandidate(),
+      title: "ICS Event",
+      confidence: 1.0,
+    });
+    vi.mocked(getUpcomingEvents).mockResolvedValue([
+      {
+        id: "x",
+        title: "x",
+        description: null,
+        location: null,
+        start: "2026-06-01T15:00:00-04:00",
+        end: "2026-06-01T16:00:00-04:00",
+        isAllDay: false,
+        attendees: [],
+        htmlLink: "",
+      },
+    ]);
+
+    await reconcileMessage({
+      parsedMessage: makeMessage(),
+      emailAccount,
+      emailAccountId: "acct_1",
+      logger: makeLogger(),
+    });
+
+    expect(arbitrateOverlap).not.toHaveBeenCalled();
+    expect(findTimeOverlaps).not.toHaveBeenCalled();
+    expect(createCalendarEvent).toHaveBeenCalledOnce();
+  });
+
+  it("Arbitrate-5: Haiku throws → orchestrator logs warn and proceeds with CREATED", async () => {
+    const overlap = {
+      id: "existing_evt_2",
+      title: "Therapy",
+      description: null,
+      location: null,
+      start: "2026-06-01T15:00:00-04:00",
+      end: "2026-06-01T16:00:00-04:00",
+      isAllDay: false,
+      attendees: [],
+      htmlLink: "",
+    };
+    vi.mocked(getUpcomingEvents).mockResolvedValue([overlap]);
+    vi.mocked(findTimeOverlaps).mockReturnValue([overlap]);
+    vi.mocked(arbitrateOverlap).mockRejectedValue(new Error("haiku down"));
+    const logger = makeLogger();
+
+    await reconcileMessage({
+      parsedMessage: makeMessage({ subject: "Appointment reminder" }),
+      emailAccount,
+      emailAccountId: "acct_1",
+      logger,
+    });
+
+    expect(arbitrateOverlap).toHaveBeenCalledOnce();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Reconciliation arbitration failed",
+      expect.any(Object),
+    );
+    expect(createCalendarEvent).toHaveBeenCalledOnce();
   });
 });
