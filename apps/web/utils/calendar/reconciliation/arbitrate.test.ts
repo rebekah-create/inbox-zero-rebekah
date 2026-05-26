@@ -95,9 +95,7 @@ describe("findTimeOverlaps", () => {
   });
 
   it("returns empty when no existing events fall in the window", () => {
-    const events = [
-      timed("far", "Tomorrow", "2026-05-27T16:30:00Z"),
-    ];
+    const events = [timed("far", "Tomorrow", "2026-05-27T16:30:00Z")];
 
     expect(
       findTimeOverlaps({

@@ -298,9 +298,7 @@ export async function reconcileMessage({
             emailAccountId,
             messageId,
             error:
-              arbError instanceof Error
-                ? arbError.message
-                : String(arbError),
+              arbError instanceof Error ? arbError.message : String(arbError),
           });
         }
       }
