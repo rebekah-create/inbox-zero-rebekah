@@ -90,6 +90,47 @@ Plans:
 4. Each reconciliation in the last 24h renders one of three sentence shapes: "already on your calendar," "added to your calendar," "looks like it's about X — review"
 5. `CREATED` and `AMBIGUOUS` lines link to the source email
 
+### Phase 11: Calendar Reconciliation v2 — Time-Overlap Arbitration
+
+**Goal:** Replace Phase 9's title-similarity matching (token-Dice) with **time-interval overlap detection on Haiku-extracted datetimes**, and use a second Haiku call to arbitrate when an overlap exists. Eliminates false-positive AMBIGUOUS outcomes caused by shared generic tokens like "Class" / "Appointment" / "Reminder," and introduces a RESCHEDULE outcome that creates the new event while annotating the old one (never destructive).
+
+**Motivating incident (2026-05-26):** Two music-class reminder emails arrived. "Guitar Class (Step Up)" at 7pm correctly MATCHED an existing 7pm calendar event. "Piano Class" at 7:30pm was incorrectly flagged AMBIGUOUS against a 4pm Math class — solely because the token "Class" was shared and they fell on the same day. Token-Dice cannot tell "Piano lesson" and "Music lessons" are semantically equivalent (Dice = 0 on those titles), and cannot tell "Piano Class" and "Math Class" are unrelated despite sharing "Class" (Dice = 0.5).
+
+**Requirements:** Supersedes Phase 9's REC-04, REC-06 matching semantics. New: RECv2-01..05 (to be drafted in discuss-phase).
+
+**Depends on:** Phase 9 (the orchestrator + persistence + extract.ts are reused)
+
+**Architecture:**
+
+```
+pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
+  → Haiku extract → { title, start, end, location, isAllDay }   ← reuse extract.ts
+  → deterministic interval-overlap query on candidate's [start, end]
+       (end defaults to start + 1h when missing; pure interval intersection, no buffer)
+  → no overlap → CREATE deterministically. Done. One Haiku call total.
+  → overlap → second Haiku call with full schedule of overlap day(s)
+       → { SAME, RESCHEDULE, SEPARATE }
+       → SAME      → MATCH (no Google call)
+       → SEPARATE  → CREATE
+       → RESCHEDULE → CREATE new + PATCH old event description with
+                      "[Possibly rescheduled? See {new_event_link}]"
+                      (never modify old event's time — reversible only)
+       → arbitrate failure → fall through to CREATE (under-creation is worse than over-creation)
+```
+
+**What gets removed:** `apps/web/utils/calendar/reconciliation/dice.ts`, the title-similarity-based branches of `match.ts` (kept only for all-day date-equality comparison), the conditional gate at `index.ts:266-305` that limited Haiku arbitration to `outcome === "CREATED"`.
+
+**What stays:** `.ics` fast path (Path A) — structured invites bypass Haiku entirely as today, since iCal UIDs handle dedup. Reconciliation record schema is unchanged (adding RESCHEDULE to the `ReconciliationOutcome` enum + a small migration).
+
+**Success criteria:**
+1. Token-Dice title similarity is no longer load-bearing for reconciliation decisions — `dice.ts` deleted, `match.ts` reduced to all-day date-equality only
+2. Replay of 2026-05-26's two music-class emails against the actual calendar state produces `MATCHED` for Guitar and `MATCHED` for Piano (both against the 7-8pm Music block) — not AMBIGUOUS or duplicate creation
+3. A camping-reservation email referencing a date >7 days out produces `CREATED` without consulting any calendar context outside the candidate's day window
+4. `RESCHEDULE` outcome appends a non-destructive note to the existing event's description and never modifies its start/end time
+5. Arbitration failures (Haiku error, schema parse fail) fall through to CREATE and are logged, never blocking
+6. Total per-message AI spend remains ≤ $0.01 worst-case (1× extract + 1× arbitrate); no-overlap path stays at 1× extract
+7. Eval corpus from Phase 9 (`09-08-PLAN.md` fixtures) passes under the new matcher; new fixture cases added for the music-class collision class and the >7-day-out CREATE case
+
 ---
 
 ## Coverage Check
