@@ -8,6 +8,7 @@ export type ReconciliationOutcome =
   | "MATCHED"
   | "CREATED"
   | "AMBIGUOUS"
+  | "RESCHEDULE"
   | "PENDING"
   | "FAILED";
 
@@ -104,6 +105,7 @@ export async function updateReconciliationRecord({
     outcome?: ReconciliationOutcome;
     googleEventId?: string | null;
     googleEventHtmlLink?: string | null;
+    rescheduleOfEventId?: string | null;
     errorMessage?: string | null;
   };
 }) {
