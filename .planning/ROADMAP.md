@@ -19,6 +19,7 @@
 **Requirements:** CAL-01, CAL-02, CAL-03
 
 **Success criteria:**
+
 1. A single cache-aware read function returns normalized events for the next 7 days
 2. Declined and tentative events are excluded at fetch time and never enter the cache
 3. Cache is keyed per email-account, TTL bounded so Calendar API calls are well within Google's free quota
@@ -27,9 +28,11 @@
 **Plans:** 2/3 plans executed
 
 Plans:
+
 - [ ] 08-PLAN-01-types-and-pure-helpers.md — D-02 type contract + pure isExcluded/normalize/pastPrune helpers with full unit-test coverage
 - [ ] 08-PLAN-02-cache-and-read-path.md — Redis envelope cache + getUpcomingEvents single read path + integration tests
-- [x] 08-PLAN-03-oauth-scope-verification.md — soft-verify live OAuth grant matches CALENDAR_SCOPES (Phase 9 readiness check) (completed 2026-05-23)
+- [x] 08-PLAN-03-oauth-scope-verification.md — soft-verify live OAuth grant matches CALENDAR_SCOPES (Phase 9 readiness check)
+ (completed 2026-05-23)
 
 ### Phase 8.5: Prompt Caching for Classification
 
@@ -40,6 +43,7 @@ Plans:
 **Depends on:** None (the v1.0 classifier is the target; Phase 8 plumbing is independent)
 
 **Success criteria:**
+
 1. The constant-prefix portion of the classification system prompt is marked with `cache_control: { type: 'ephemeral' }` per Anthropic SDK conventions
 2. The Anthropic Console usage dashboard shows non-zero `cache_read_input_tokens` within 24h of deploy
 3. Average per-classification input cost (sum of `input_tokens` + `cache_read_input_tokens` × pricing) is measurably lower than the pre-deploy baseline
@@ -54,6 +58,7 @@ Plans:
 **Depends on:** Phase 8 (consumes the cached event list)
 
 **Success criteria:**
+
 1. Cheap pre-filter (regex/keyword + .ics detection) gates expensive LLM extraction — LLM runs only on candidates
 2. Extraction produces title, start/end (user TZ), location, mentioned people from both `.ics` invites (via existing `analyzeCalendarEvent`) and plain-text bodies
 3. Every extraction outcome persists as a reconciliation record linked to source email + (when applicable) calendar event ID
@@ -65,6 +70,7 @@ Plans:
 **Plans:** 9/9 plans complete
 
 Plans:
+
 - [x] 09-01-PLAN.md — Add ReconciliationRecord Prisma model + migration
 - [x] 09-02-PLAN.md — Pure helpers: titleSimilarity (Dice), eventSignature, decideOutcome decision tree
 - [x] 09-03-PLAN.md — Haiku extraction call (cached system prompt + Zod schema + .ics adapter)
@@ -84,6 +90,7 @@ Plans:
 **Depends on:** Phase 8 (event cache) and Phase 9 (reconciliation records)
 
 **Success criteria:**
+
 1. Digest opens with a Today section (9am ET → midnight ET) and a Tomorrow morning section (6am–noon next day)
 2. Each agenda item renders time/title/location/overlap indicator
 3. Empty days render a friendly fallback rather than a blank section
@@ -123,6 +130,7 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 **What stays:** `.ics` fast path (Path A) — structured invites bypass Haiku entirely as today, since iCal UIDs handle dedup. Reconciliation record schema is unchanged (adding RESCHEDULE to the `ReconciliationOutcome` enum + a small migration).
 
 **Success criteria:**
+
 1. Token-Dice title similarity is no longer load-bearing for reconciliation decisions — `dice.ts` deleted, `match.ts` reduced to all-day date-equality only
 2. Replay of 2026-05-26's two music-class emails against the actual calendar state produces `MATCHED` for Guitar and `MATCHED` for Piano (both against the 7-8pm Music block) — not AMBIGUOUS or duplicate creation
 3. A camping-reservation email referencing a date >7 days out produces `CREATED` without consulting any calendar context outside the candidate's day window
@@ -130,6 +138,23 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 5. Arbitration failures (Haiku error, schema parse fail) fall through to CREATE and are logged, never blocking
 6. Total per-message AI spend remains ≤ $0.01 worst-case (1× extract + 1× arbitrate); no-overlap path stays at 1× extract
 7. Eval corpus from Phase 9 (`09-08-PLAN.md` fixtures) passes under the new matcher; new fixture cases added for the music-class collision class and the >7-day-out CREATE case
+
+**Plans:** 6 plans
+Plans:
+**Wave 1**
+
+- [ ] 11-01-PLAN.md — Prisma migration: add RESCHEDULE enum + rescheduleOfEventId column
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 11-02-PLAN.md — overlap.ts pure interval helper, simplify match.ts to all-day, delete dice.ts
+- [ ] 11-03-PLAN.md — arbitrate.ts rewrite: 4-outcome verdict + prompt caching + day-schedule context
+- [ ] 11-04-PLAN.md — patchEventDescription helper (non-destructive Google events.patch description-only)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 11-05-PLAN.md — Rewrite reconcileMessage post-extract: overlap-query -> arbitrate-if-overlap -> act on verdict
+- [ ] 11-06-PLAN.md — Arbitration fixture corpus + RUN_AI_TESTS live eval + extended cost projection
 
 ---
 
