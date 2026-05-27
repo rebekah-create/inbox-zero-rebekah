@@ -364,32 +364,3 @@ ${scheduleList}
   return { verdict, matchedEventId: claimed };
 }
 
-/**
- * Pure helper — pulls existing events whose start time is within `windowMs`
- * of the candidate's start. Skips all-day existing events and skips when the
- * candidate has no resolvable start time.
- *
- * @deprecated Use findIntervalOverlaps from ./overlap.ts (Phase 11). Removed
- *   in 11-05 when the orchestrator switches from the ±60-min title-overlap
- *   gate to the pure interval-intersection gate. Retained here only because
- *   index.ts still imports it pre-11-05.
- */
-export function findTimeOverlaps({
-  candidateStartISO,
-  existingEvents,
-  windowMs,
-}: {
-  candidateStartISO: string;
-  existingEvents: NormalizedCalendarEvent[];
-  windowMs: number;
-}): NormalizedCalendarEvent[] {
-  if (!candidateStartISO) return [];
-  const candMs = Date.parse(candidateStartISO);
-  if (!Number.isFinite(candMs)) return [];
-  return existingEvents.filter((e) => {
-    if (e.isAllDay) return false;
-    const eMs = Date.parse(e.start);
-    if (!Number.isFinite(eMs)) return false;
-    return Math.abs(eMs - candMs) <= windowMs;
-  });
-}

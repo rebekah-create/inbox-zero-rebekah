@@ -6,34 +6,51 @@ import { convertEmailHtmlToText } from "@/utils/mail";
 import { getUpcomingEvents } from "@/utils/calendar/upcoming-events";
 import { extractFromIcs } from "./ics-path";
 import { extractCandidateEvent, type CandidateEvent } from "./extract";
-import { decideOutcome } from "./match";
-import { arbitrateOverlap, findTimeOverlaps } from "./arbitrate";
+import { decideAllDayOutcome } from "./match";
+import { arbitrateOverlap } from "./arbitrate";
+import { findIntervalOverlaps } from "./overlap";
 import { eventSignature } from "./signature";
 import {
   createReconciliationRecord,
   findExistingReconciliationRecord,
   findStalePendingRecord,
   updateReconciliationRecord,
+  type ReconciliationOutcome,
 } from "./persist";
-import { createCalendarEvent } from "./create-event";
+import { createCalendarEvent, patchEventDescription } from "./create-event";
 
 /**
- * Phase 9 reconciliation orchestrator (plan 09-06).
+ * Phase 11 reconciliation orchestrator (plan 11-05).
  *
- * Wave 3 wiring of the D-12 sequence:
- *   1. Pre-filter (D-01) → if neither Path A (.ics) nor Path B (Haiku) applies, return.
+ * D-13 sequence (Wave 3 wiring on top of waves 1+2 substrate):
+ *   1. Pre-filter (D-01) — keyword backstop or CALENDAR ExecutedRule.
  *   2. findExistingReconciliationRecord — early idempotency fast-path (T-09-04).
  *   3. Stale-PENDING recovery (D-16) → reuse existing row id, skip create + skip Haiku.
  *   4. Extract via Path A (ics-path) or Path B (extract).
  *   5. eventSignature → createReconciliationRecord (P2002 catch → no-op).
- *   6. getUpcomingEvents → decideOutcome → updateReconciliationRecord(outcome).
- *   7. If outcome=CREATED: createCalendarEvent → update with googleEventId / failed.
+ *   6. Match (NEW — D-13):
+ *        - Path A (.ics, D-14) → outcome=CREATED deterministically; arbitrate skipped.
+ *        - All-day candidate (D-03) → decideAllDayOutcome; if NEEDS_ARBITRATION call arbiter
+ *          over the same-date schedule.
+ *        - Timed candidate (D-01/D-02) → findIntervalOverlaps over the upcoming window;
+ *          if any overlap, call arbiter over the FULL day schedule (D-07).
+ *        - Arbiter verdicts (D-06):
+ *            SAME → outcome=MATCHED (no Google call).
+ *            SEPARATE → outcome=CREATED.
+ *            RESCHEDULE → outcome=RESCHEDULE; insert new event THEN patch old event's
+ *              description (D-09) — non-destructive annotation, never modifies time/title.
+ *            SKIP → outcome=FAILED, errorMessage flags an arbiter-skipped record.
+ *        - Arbiter throws / parse fail / id-whitelist fail (D-08) → fall through to
+ *          CREATE deterministically; never block orchestrator.
+ *   7. Act on outcome — MATCHED/FAILED short-circuit; CREATED+RESCHEDULE go through
+ *      Google events.insert; RESCHEDULE additionally calls patchEventDescription.
  *   8. Outer try/catch — orchestrator NEVER rethrows (OPS-01, EVT-05).
  *
  * Logging discipline (T-09-05): structured fields only on warn/error.
- *   - allowed: emailAccountId, messageId, threadId, outcome, errorCode, error.
+ *   - allowed: emailAccountId, messageId, threadId, outcome, errorCode, error,
+ *              verdict, dayScheduleCount.
  *   - forbidden: extractedTitle, extractedLocation, extractedAttendees,
- *                raw textPlain/textHtml, full subject line.
+ *                raw textPlain/textHtml, full subject line, body excerpts.
  */
 
 // D-02 keyword backstop list — locked verbatim per plan 09-06 task 1.
@@ -89,6 +106,88 @@ function truncateBody(parsedMessage: ParsedMessage): string {
     parsedMessage.textPlain ??
     convertEmailHtmlToText({ htmlText: parsedMessage.textHtml ?? "" });
   return raw.slice(0, 2000);
+}
+
+/**
+ * D-08 fallback wrapper around `arbitrateOverlap`. Any thrown / rejected
+ * arbitration (Zod parse failure, whitelist failure, network) is logged with
+ * T-09-05-safe fields and resolves to a deterministic CREATED outcome. The
+ * caller never observes an exception from this helper — under-creation is
+ * worse than over-creation; the orchestrator must always make progress.
+ */
+async function runArbitrationOrFallback(args: {
+  email: { subject: string; from: string; bodyTruncated: string };
+  candidate: {
+    title: string;
+    startISO: string;
+    endISO: string | null;
+    location: string | null;
+  };
+  daySchedule: Parameters<typeof arbitrateOverlap>[0]["daySchedule"];
+  emailAccount: EmailAccountWithAI;
+  logger: Logger;
+  emailAccountId: string;
+  messageId: string;
+}): Promise<{
+  outcome: ReconciliationOutcome;
+  matchedEventId: string | null;
+  rescheduleOfEventId: string | null;
+  arbiterErrorMessage: string | null;
+}> {
+  try {
+    const arb = await arbitrateOverlap({
+      email: args.email,
+      candidate: args.candidate,
+      daySchedule: args.daySchedule,
+      emailAccount: args.emailAccount,
+      logger: args.logger,
+    });
+    switch (arb.verdict) {
+      case "SAME":
+        return {
+          outcome: "MATCHED",
+          matchedEventId: arb.matchedEventId,
+          rescheduleOfEventId: null,
+          arbiterErrorMessage: null,
+        };
+      case "SEPARATE":
+        return {
+          outcome: "CREATED",
+          matchedEventId: null,
+          rescheduleOfEventId: null,
+          arbiterErrorMessage: null,
+        };
+      case "RESCHEDULE":
+        return {
+          outcome: "RESCHEDULE",
+          matchedEventId: null,
+          rescheduleOfEventId: arb.matchedEventId,
+          arbiterErrorMessage: null,
+        };
+      case "SKIP":
+        return {
+          outcome: "FAILED",
+          matchedEventId: null,
+          rescheduleOfEventId: null,
+          arbiterErrorMessage: "arbiter_skip",
+        };
+    }
+  } catch (err) {
+    args.logger.warn(
+      "Reconciliation arbitration failed; falling through to CREATE",
+      {
+        emailAccountId: args.emailAccountId,
+        messageId: args.messageId,
+        error: err instanceof Error ? err.message : String(err),
+      },
+    );
+    return {
+      outcome: "CREATED",
+      matchedEventId: null,
+      rescheduleOfEventId: null,
+      arbiterErrorMessage: null,
+    };
+  }
 }
 
 /**
@@ -238,82 +337,181 @@ export async function reconcileMessage({
       recordId = created.record.id;
     }
 
-    // 5. Match against the user's 7-day window.
-    const now = new Date();
-    const upcoming = await getUpcomingEvents({
-      emailAccountId,
-      now,
-      logger,
-    }).catch(() => []);
-    let { outcome, matchedEventId } = decideOutcome({
-      candidate: {
-        title: candidate.title,
-        startISO: candidate.startISO,
-        isAllDay,
-      },
-      existingEvents: upcoming,
-    });
+    // 5. Determine outcome (D-13). The Phase 11 flow replaces token-Dice with
+    //    pure interval-overlap + arbitrate-if-overlap. Path A (.ics) is a
+    //    deterministic CREATE per D-14 — iCalendar UIDs handle dedup upstream.
+    let outcome: ReconciliationOutcome;
+    let matchedEventId: string | null = null;
+    let rescheduleOfEventId: string | null = null;
+    let arbiterErrorMessage: string | null = null;
 
-    // 5b. Haiku arbitration tie-breaker. The token-Dice matcher reads titles
-    // only; it misses semantic equivalence ("Video visit" vs "Bekah therapy")
-    // and verbose-vs-terse mismatches ("Explorer Art Club | ..." vs "Madi Art
-    // class"). When decideOutcome wants to CREATE but the candidate's start
-    // time overlaps an existing event, ask Haiku to arbitrate.
-    //
-    // Path A (.ics) skips this — ICS gives clean structured data and the
-    // matcher already had authoritative signals.
-    // All-day candidates skip this — match.ts's D-08 branch handles them.
-    if (
-      outcome === "CREATED" &&
-      !pathA &&
-      !isAllDay &&
-      candidate.startISO &&
-      upcoming.length > 0
-    ) {
-      const overlaps = findTimeOverlaps({
-        candidateStartISO: candidate.startISO,
-        existingEvents: upcoming,
-        windowMs: 60 * 60 * 1000,
-      });
-      if (overlaps.length > 0) {
-        try {
-          const arb = await arbitrateOverlap({
+    if (!pathA) {
+      const now = new Date();
+      const upcoming = await getUpcomingEvents({
+        emailAccountId,
+        now,
+        logger,
+      }).catch(() => []);
+
+      if (isAllDay) {
+        // D-03 all-day branch.
+        const allDay = decideAllDayOutcome({
+          candidate: {
+            title: candidate.title,
+            startISO: candidate.startISO,
+            isAllDay: true,
+          },
+          existingEvents: upcoming,
+        });
+        if (allDay.outcome === "CREATED") {
+          outcome = "CREATED";
+          logger.info("reconcile_route", {
+            emailAccountId,
+            messageId,
+            threadId,
+            outcome,
+          });
+        } else if (allDay.outcome === "MATCHED") {
+          // Forward-compat: decideAllDayOutcome does not produce MATCHED today,
+          // but the type permits it. Honor it as a no-Google MATCHED.
+          outcome = "MATCHED";
+          matchedEventId = allDay.matchedEventId;
+          logger.info("reconcile_route", {
+            emailAccountId,
+            messageId,
+            threadId,
+            outcome,
+          });
+        } else {
+          // NEEDS_ARBITRATION — hand off to Haiku over the same-date schedule.
+          const verdict = await runArbitrationOrFallback({
             email: { subject, from: senderEmail, bodyTruncated },
             candidate: {
               title: candidate.title,
               startISO: candidate.startISO,
+              endISO: candidate.endISO,
+              location: candidate.location,
             },
-            existingEvents: overlaps,
+            daySchedule: allDay.sameDateEvents,
             emailAccount,
             logger,
-          });
-          if (arb.matchedEventId) {
-            outcome = "MATCHED";
-            matchedEventId = arb.matchedEventId;
-          }
-        } catch (arbError) {
-          // Arbitration failed — fall through with original CREATED. Never
-          // let the tie-breaker break the orchestrator (EVT-05).
-          logger.warn("Reconciliation arbitration failed", {
             emailAccountId,
             messageId,
-            error:
-              arbError instanceof Error ? arbError.message : String(arbError),
+          });
+          ({
+            outcome,
+            matchedEventId,
+            rescheduleOfEventId,
+            arbiterErrorMessage,
+          } = verdict);
+          logger.info("reconcile_route", {
+            emailAccountId,
+            messageId,
+            threadId,
+            outcome,
+            verdict: verdict.outcome,
+            dayScheduleCount: allDay.sameDateEvents.length,
           });
         }
+      } else if (candidate.startISO) {
+        // D-01/D-02 timed branch — pure interval intersection.
+        const overlaps = findIntervalOverlaps({
+          candidateStartISO: candidate.startISO,
+          candidateEndISO: candidate.endISO,
+          existingEvents: upcoming,
+        });
+        if (overlaps.length === 0) {
+          outcome = "CREATED";
+          logger.info("reconcile_route", {
+            emailAccountId,
+            messageId,
+            threadId,
+            outcome,
+          });
+        } else {
+          // D-07: send Haiku the FULL day schedule, not just the overlapping
+          // events. Include candidate's start AND end dates in case the
+          // candidate spans midnight.
+          const overlapDates = new Set(
+            overlaps.map((e) => e.start.slice(0, 10)),
+          );
+          overlapDates.add(candidate.startISO.slice(0, 10));
+          if (candidate.endISO) {
+            overlapDates.add(candidate.endISO.slice(0, 10));
+          }
+          const daySchedule = upcoming.filter((e) =>
+            overlapDates.has(e.start.slice(0, 10)),
+          );
+
+          const verdict = await runArbitrationOrFallback({
+            email: { subject, from: senderEmail, bodyTruncated },
+            candidate: {
+              title: candidate.title,
+              startISO: candidate.startISO,
+              endISO: candidate.endISO,
+              location: candidate.location,
+            },
+            daySchedule,
+            emailAccount,
+            logger,
+            emailAccountId,
+            messageId,
+          });
+          ({
+            outcome,
+            matchedEventId,
+            rescheduleOfEventId,
+            arbiterErrorMessage,
+          } = verdict);
+          logger.info("reconcile_route", {
+            emailAccountId,
+            messageId,
+            threadId,
+            outcome,
+            verdict: verdict.outcome,
+            dayScheduleCount: daySchedule.length,
+          });
+        }
+      } else {
+        // No resolvable start time — keep parity with prior behavior: CREATE
+        // so the record carries the candidate metadata.
+        outcome = "CREATED";
+        logger.info("reconcile_route", {
+          emailAccountId,
+          messageId,
+          threadId,
+          outcome,
+        });
       }
+    } else {
+      // pathA (.ics) — Phase 9 deterministic CREATE path (D-14). iCal UID
+      // handles dedup upstream; no overlap-or-arbitrate work needed.
+      outcome = "CREATED";
+      logger.info("reconcile_route", {
+        emailAccountId,
+        messageId,
+        threadId,
+        outcome,
+      });
     }
 
-    // 6. Persist MATCHED / AMBIGUOUS outcomes (no Google call).
-    if (outcome !== "CREATED") {
+    // 6. Act on outcome.
+    if (outcome === "MATCHED") {
       await updateReconciliationRecord({
         id: recordId,
-        data: { outcome, googleEventId: matchedEventId },
+        data: { outcome: "MATCHED", googleEventId: matchedEventId },
+      });
+      return;
+    }
+    if (outcome === "FAILED") {
+      await updateReconciliationRecord({
+        id: recordId,
+        data: { outcome: "FAILED", errorMessage: arbiterErrorMessage },
       });
       return;
     }
 
-    // 7. CREATED path → Google events.insert.
+    // CREATED or RESCHEDULE → both insert a new Google event first.
     const tz = emailAccount.timezone ?? "America/New_York";
     const inserted = await createCalendarEvent({
       input: {
@@ -332,21 +530,51 @@ export async function reconcileMessage({
       },
       logger,
     });
-    if (inserted.ok) {
-      await updateReconciliationRecord({
-        id: recordId,
-        data: {
-          outcome: "CREATED",
-          googleEventId: inserted.googleEventId,
-          googleEventHtmlLink: inserted.googleEventHtmlLink,
-        },
-      });
-    } else {
+
+    if (!inserted.ok) {
+      // Insert failed — persist FAILED. For RESCHEDULE we do NOT patch the
+      // old event because we have no new htmlLink to point to.
       await updateReconciliationRecord({
         id: recordId,
         data: { outcome: "FAILED", errorMessage: inserted.reason },
       });
+      return;
     }
+
+    if (outcome === "RESCHEDULE" && rescheduleOfEventId) {
+      // D-09: non-destructive annotation on the old event. patchEventDescription
+      // owns the leading-newline separator — we pass the raw note text.
+      const patchResult = await patchEventDescription({
+        input: {
+          emailAccountId,
+          eventId: rescheduleOfEventId,
+          appendText: `[Possibly rescheduled? See ${inserted.googleEventHtmlLink}]`,
+        },
+        logger,
+      });
+      await updateReconciliationRecord({
+        id: recordId,
+        data: {
+          outcome: "RESCHEDULE",
+          googleEventId: inserted.googleEventId,
+          googleEventHtmlLink: inserted.googleEventHtmlLink,
+          rescheduleOfEventId,
+          errorMessage: patchResult.ok
+            ? null
+            : `patch_failed:${patchResult.reason}`,
+        },
+      });
+      return;
+    }
+
+    await updateReconciliationRecord({
+      id: recordId,
+      data: {
+        outcome: "CREATED",
+        googleEventId: inserted.googleEventId,
+        googleEventHtmlLink: inserted.googleEventHtmlLink,
+      },
+    });
   } catch (error) {
     // Failure isolation (OPS-01, EVT-05) — DO NOT rethrow.
     logger.error("Reconciliation failed", {
