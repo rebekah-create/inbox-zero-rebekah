@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Never run `tsc`, `pnpm exec tsc`, `pnpm build`, or any full typecheck on the user's Windows machine.** They lock up the system. This includes scoped variants like `pnpm exec tsc --noEmit -p tsconfig.json` and `pnpm --filter inbox-zero-ai build:ci`. If you need to verify types, push and let CI run it, or ask the user to run it on a different machine. Reading errors from the editor / LSP `diagnostics` is fine; spawning a typecheck process is not.
 
+**Never run `pnpm test`, `vitest`, or any test runner locally.** Same reason — the machine bogs down to a crawl, especially in worktrees that lack `node_modules`. Tests must run on CI. Subagents executing GSD plans MUST be told this explicitly; acceptance criteria of the form "tests pass locally" should be reframed as "tests committed, verification deferred to CI". Lint (`pnpm lint`, `pnpm exec ultracite fix`) is lightweight and OK.
+
 `pnpm dev` and `pnpm build` are also not to be run unless the user explicitly asks (per AGENTS.md).
 
 ## Fork context
@@ -149,3 +151,17 @@ This project uses [GSD](https://github.com/get-shit-done-cc/gsd) for planning an
 /gsd-plan-phase 1      # plan Phase 1 in detail
 /gsd-discuss-phase N   # clarify approach before planning
 ```
+
+<!-- WIN-CMDS-NOTE v1 -->
+## Windows-Friendly Commands
+
+This machine runs **Windows 11 + PowerShell 7 (pwsh)**, not Linux/macOS. When suggesting shell commands:
+
+- **Use PowerShell syntax by default.** Bash is available via Git Bash / the Bash tool, but PowerShell is the primary shell.
+- **No Unix-only constructs in PowerShell:** no `$VAR` env refs (use `$env:VAR`), no `/dev/null` (use `$null`), no `&&`/`||` outside pwsh 7+, no `head`/`tail` (use `Select-Object -First/-Last` or `Get-Content -TotalCount/-Tail`), no `which` (use `Get-Command`), no `touch`/`rm -rf`/`ln -s` (use `New-Item`/`Remove-Item -Recurse -Force`/`New-Item -ItemType SymbolicLink`).
+- **Pipelines:** prefer `Select-String` over piping through `grep` — Windows leaks orphan grep processes when the PS pipeline exits abnormally.
+- **Paths:** use `C:\Users\rebek\...` style in PS; Git Bash uses `/c/Users/rebek/...`. Don't mix.
+- **Scripts:** `.ps1` files with non-ASCII characters need a UTF-8 BOM, or PowerShell parses them broken. Prefer ASCII.
+- **`gh api ... --jq .field` returns the literal string "null"** on 404 — gate existence checks on exit code, not output.
+- **Hardware:** this is a budget laptop (Intel N150, 3.6 GB RAM). Avoid spawning many parallel shells; long-running watchers compete for memory.
+<!-- /WIN-CMDS-NOTE -->
