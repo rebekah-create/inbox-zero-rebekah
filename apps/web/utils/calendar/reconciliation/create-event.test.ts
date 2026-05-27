@@ -9,10 +9,16 @@ vi.mock("@/utils/prisma", () => ({
 }));
 
 const mockEventsInsert = vi.fn();
+const mockEventsGet = vi.fn();
+const mockEventsPatch = vi.fn();
 
 vi.mock("@/utils/calendar/client", () => ({
   getCalendarClientWithRefresh: vi.fn(async () => ({
-    events: { insert: mockEventsInsert },
+    events: {
+      insert: mockEventsInsert,
+      get: mockEventsGet,
+      patch: mockEventsPatch,
+    },
   })),
 }));
 
@@ -23,6 +29,7 @@ import {
   buildBackRefDescription,
   createCalendarEvent,
   type CreateCalendarEventInput,
+  patchEventDescription,
 } from "./create-event";
 
 const EMAIL_ACCOUNT_ID = "test-account-id";
@@ -75,6 +82,8 @@ function mockConnection() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockEventsInsert.mockReset();
+  mockEventsGet.mockReset();
+  mockEventsPatch.mockReset();
 });
 
 describe("createCalendarEvent", () => {
@@ -287,6 +296,24 @@ describe("createCalendarEvent", () => {
 
     const result = await createCalendarEvent({ input: makeInput(), logger });
     expect(result).toEqual({ ok: false, reason: "api-error" });
+  });
+});
+
+describe("patchEventDescription (RED smoke)", () => {
+  it("RED: helper exists and returns no-connection when CalendarConnection is missing", async () => {
+    (prisma.calendarConnection.findFirst as any).mockResolvedValue(null);
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: {
+        emailAccountId: EMAIL_ACCOUNT_ID,
+        eventId: "old-evt-1",
+        appendText: "[Possibly rescheduled? See https://link]",
+      },
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "no-connection" });
   });
 });
 
