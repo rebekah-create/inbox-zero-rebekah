@@ -280,9 +280,8 @@ export async function patchEventDescription({
     typeof existingDescription === "string" && existingDescription.length > 0
       ? existingDescription
       : "";
-  const newDescription = base.length > 0
-    ? `${base}\n\n${input.appendText}`
-    : input.appendText;
+  const newDescription =
+    base.length > 0 ? `${base}\n\n${input.appendText}` : input.appendText;
 
   try {
     await client.events.patch({

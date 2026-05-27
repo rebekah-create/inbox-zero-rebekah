@@ -49,9 +49,7 @@ export const arbitrationSchema = z.object({
     ),
 });
 
-export type ArbitrationVerdict = z.infer<
-  typeof arbitrationSchema
->["verdict"];
+export type ArbitrationVerdict = z.infer<typeof arbitrationSchema>["verdict"];
 export type ArbitrationResult = z.infer<typeof arbitrationSchema>;
 
 const SYSTEM_PROMPT = `You arbitrate the semantic identity of an inbound email against the user's
@@ -363,4 +361,3 @@ ${scheduleList}
   });
   return { verdict, matchedEventId: claimed };
 }
-

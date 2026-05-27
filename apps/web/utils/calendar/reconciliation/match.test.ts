@@ -138,7 +138,6 @@ describe("decideAllDayOutcome — Phase 11 D-03 all-day branch", () => {
   it("throws when called with a non-all-day candidate (contract violation)", () => {
     expect(() =>
       decideAllDayOutcome({
-        // biome-ignore lint/suspicious/noExplicitAny: deliberately violating the contract for the test
         candidate: {
           title: "Timed",
           startISO: "2026-08-14T14:00:00.000Z",

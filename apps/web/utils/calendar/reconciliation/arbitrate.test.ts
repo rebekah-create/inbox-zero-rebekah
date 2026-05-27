@@ -59,7 +59,12 @@ function timed(
 }
 
 const DAY_SCHEDULE: NormalizedCalendarEvent[] = [
-  timed("evt_1", "Music lessons", "2026-05-26T19:00:00Z", "2026-05-26T20:00:00Z"),
+  timed(
+    "evt_1",
+    "Music lessons",
+    "2026-05-26T19:00:00Z",
+    "2026-05-26T20:00:00Z",
+  ),
   timed("evt_2", "Math Class", "2026-05-26T16:00:00Z", "2026-05-26T17:00:00Z"),
 ];
 
