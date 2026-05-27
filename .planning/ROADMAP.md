@@ -139,7 +139,7 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 6. Total per-message AI spend remains ≤ $0.01 worst-case (1× extract + 1× arbitrate); no-overlap path stays at 1× extract
 7. Eval corpus from Phase 9 (`09-08-PLAN.md` fixtures) passes under the new matcher; new fixture cases added for the music-class collision class and the >7-day-out CREATE case
 
-**Plans:** 4/6 plans executed
+**Plans:** 6/6 plans complete
 Plans:
 **Wave 1**
 
@@ -153,8 +153,8 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 11-05-PLAN.md — Rewrite reconcileMessage post-extract: overlap-query -> arbitrate-if-overlap -> act on verdict
-- [ ] 11-06-PLAN.md — Arbitration fixture corpus + RUN_AI_TESTS live eval + extended cost projection
+- [x] 11-05-PLAN.md — Rewrite reconcileMessage post-extract: overlap-query -> arbitrate-if-overlap -> act on verdict
+- [x] 11-06-PLAN.md — Arbitration fixture corpus + RUN_AI_TESTS live eval + extended cost projection
 
 ---
 
