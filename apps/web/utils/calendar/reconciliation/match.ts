@@ -1,81 +1,70 @@
 import type { NormalizedCalendarEvent } from "@/utils/calendar/upcoming-events-types";
-import { titleSimilarity } from "./dice";
 
 /**
- * D-06 four-step decision tree for reconciling an extracted calendar candidate
- * against the user's existing 7-day window.
+ * Phase 11 D-03 — all-day reconciliation branch.
  *
- *  1. Strong title sim (>= 0.7) AND time within ±60min -> MATCHED
- *  2. Strong title sim anywhere in window, time differs > 60min -> AMBIGUOUS (reschedule, REC-06)
- *  3. Same-day event AND weak sim (0.4 <= sim < 0.7) -> AMBIGUOUS (near-match)
- *  4. Otherwise -> CREATED
+ * Token-Dice (Phase 9 D-06/D-07) has been retired (D-04, D-12). `match.ts`
+ * now owns ONE responsibility: deciding what to do when the Haiku extractor
+ * returns an all-day candidate. Timed candidates are routed through
+ * `overlap.ts` + the arbitration Haiku call in `arbitrate.ts` by the
+ * orchestrator (Phase 11 11-05); this module is never called for them.
  *
- * D-08 all-day branch is handled first: compare by date-string (YYYY-MM-DD)
- * equality plus title strong-sim. Never wrap an all-day `start` in `new Date()`
- * — see 08-RESEARCH.md Pitfall 4 (UTC midnight shifts the date).
+ * Rule: if any existing event shares the candidate's date (by `slice(0,10)`),
+ * return `NEEDS_ARBITRATION` along with the list of same-date events so the
+ * orchestrator can hand them off to Haiku. If no event shares the date,
+ * return `CREATED` — there is nothing to compare against.
  *
- * Pure helper — only imports are `titleSimilarity` from ./dice and the
- * NormalizedCalendarEvent type. No Prisma, no Google client, no AI SDK.
+ * Title similarity is NEVER consulted in this module. All semantic identity
+ * judgments are deferred to the arbiter.
+ *
+ * Date-handling pitfall: never wrap an all-day `start` in `new Date()` — UTC
+ * midnight shifts can move the date by hours (Phase 8 08-RESEARCH.md
+ * Pitfall 4; Phase 9 D-08 carry-forward). Always compare date strings.
  */
 
-export type ReconcileOutcome = "MATCHED" | "CREATED" | "AMBIGUOUS";
+/**
+ * Discriminated outcome of the all-day branch.
+ *
+ * `MATCHED` is not currently produced by `decideAllDayOutcome` — under Phase 11
+ * the MATCH-vs-CREATE decision lives downstream of the arbiter. The variant is
+ * kept in the type for forward-compat in case a future task makes this function
+ * authoritative again (e.g. a deterministic fast-path).
+ */
+export type AllDayOutcome = {
+  matchedEventId: string | null;
+  outcome: "MATCHED" | "CREATED" | "NEEDS_ARBITRATION";
+  sameDateEvents: NormalizedCalendarEvent[];
+};
 
-const STRONG_SIM = 0.7;
-const WEAK_SIM = 0.4;
-const TIME_WINDOW_MS = 60 * 60 * 1000;
-
-export function decideOutcome({
+export function decideAllDayOutcome({
   candidate,
   existingEvents,
 }: {
-  candidate: { title: string; startISO: string; isAllDay: boolean };
+  candidate: { isAllDay: true; startISO: string; title: string };
   existingEvents: NormalizedCalendarEvent[];
-}): { outcome: ReconcileOutcome; matchedEventId: string | null } {
-  // D-08: all-day candidates compare by date string + strong title sim.
-  if (candidate.isAllDay) {
-    const candDate = candidate.startISO.slice(0, 10);
-    for (const e of existingEvents) {
-      // For an all-day existing event, `start` is "YYYY-MM-DD".
-      // For a timed existing event, slice(0,10) still yields the date portion.
-      const eDate = e.start.slice(0, 10);
-      const sim = titleSimilarity(candidate.title, e.title);
-      if (eDate === candDate && sim >= STRONG_SIM) {
-        return { outcome: "MATCHED", matchedEventId: e.id };
-      }
-    }
-    return { outcome: "CREATED", matchedEventId: null };
+}): AllDayOutcome {
+  if (candidate.isAllDay !== true) {
+    throw new Error(
+      "decideAllDayOutcome called with non-all-day candidate; orchestrator must route timed candidates through findIntervalOverlaps + arbitrate.",
+    );
   }
 
-  const candMs = Date.parse(candidate.startISO);
-
-  // Step 1: strong sim AND time within ±60min -> MATCHED
-  for (const e of existingEvents) {
-    if (e.isAllDay) continue; // all-day existing can't match a timed candidate at minute precision
-    const sim = titleSimilarity(candidate.title, e.title);
-    const diff = Math.abs(Date.parse(e.start) - candMs);
-    if (sim >= STRONG_SIM && diff <= TIME_WINDOW_MS) {
-      return { outcome: "MATCHED", matchedEventId: e.id };
-    }
-  }
-
-  // Step 2: strong sim anywhere in window -> AMBIGUOUS (reschedule, REC-06)
-  for (const e of existingEvents) {
-    if (e.isAllDay) continue;
-    const sim = titleSimilarity(candidate.title, e.title);
-    if (sim >= STRONG_SIM) {
-      return { outcome: "AMBIGUOUS", matchedEventId: e.id };
-    }
-  }
-
-  // Step 3: same-day + weak sim -> AMBIGUOUS (near-match)
   const candDate = candidate.startISO.slice(0, 10);
-  for (const e of existingEvents) {
-    const eDate = e.start.slice(0, 10);
-    const sim = titleSimilarity(candidate.title, e.title);
-    if (eDate === candDate && sim >= WEAK_SIM && sim < STRONG_SIM) {
-      return { outcome: "AMBIGUOUS", matchedEventId: e.id };
-    }
+  const sameDateEvents = existingEvents.filter(
+    (e) => e.start.slice(0, 10) === candDate,
+  );
+
+  if (sameDateEvents.length === 0) {
+    return {
+      outcome: "CREATED",
+      matchedEventId: null,
+      sameDateEvents: [],
+    };
   }
 
-  return { outcome: "CREATED", matchedEventId: null };
+  return {
+    outcome: "NEEDS_ARBITRATION",
+    matchedEventId: null,
+    sameDateEvents,
+  };
 }
