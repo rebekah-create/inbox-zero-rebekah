@@ -251,18 +251,20 @@ describe("reconcileMessage — pre-existing flow", () => {
     expect(extractCandidateEvent).toHaveBeenCalledOnce();
   });
 
-  it("skips when classifier already labeled the message non-calendar (NEWSLETTER systemType)", async () => {
+  it("still runs Haiku when classifier labeled it non-calendar but a keyword matched (legacy learned-pattern fallback)", async () => {
+    // A real calendar event can land in Notification / Newsletter / Urgent
+    // via legacy learned-pattern rules that predate the Calendar label.
+    // The keyword backstop must keep firing for those cases — Haiku is the
+    // gatekeeper that decides whether there's actually an event.
     vi.mocked(prisma.executedRule.findFirst).mockResolvedValue({
-      rule: { systemType: "NEWSLETTER", name: "Newsletters" },
+      rule: { systemType: "NOTIFICATION", name: "Notification" },
     } as never);
 
     await expect(
       reconcileMessage({
-        // Subject contains "reminder" — would otherwise trigger the keyword
-        // backstop and proceed to Haiku.
         parsedMessage: makeMessage({
-          subject: "Reminder: confirm your subscription",
-          textPlain: "...",
+          subject: "Appointment reminder for Friday",
+          textPlain: "Your visit is confirmed.",
         }),
         emailAccount,
         emailAccountId: "acct_1",
@@ -270,14 +272,12 @@ describe("reconcileMessage — pre-existing flow", () => {
       }),
     ).resolves.toBeUndefined();
 
-    expect(extractCandidateEvent).not.toHaveBeenCalled();
-    expect(findExistingReconciliationRecord).not.toHaveBeenCalled();
-    expect(createReconciliationRecord).not.toHaveBeenCalled();
+    expect(extractCandidateEvent).toHaveBeenCalledOnce();
   });
 
-  it("skips when classifier matched a user 'Internal' rule (digest opt-out)", async () => {
+  it("skips when classifier matched the user 'TD Furn' rule (digest opt-out)", async () => {
     vi.mocked(prisma.executedRule.findFirst).mockResolvedValue({
-      rule: { systemType: null, name: "Internal" },
+      rule: { systemType: null, name: "TD Furn" },
     } as never);
 
     await expect(

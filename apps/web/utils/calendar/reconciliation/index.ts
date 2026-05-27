@@ -84,28 +84,17 @@ export function matchesKeywordBackstop({
 }
 
 /**
- * SystemTypes the classifier already decided are categorically not calendar
- * events. When the message has been routed to one of these, the keyword
- * backstop is overruled and the reconciler short-circuits before Haiku runs.
+ * User-defined rule names that block reconciliation outright. This is the
+ * ONLY classifier signal that overrules the keyword backstop — by design.
  *
- * Excludes conversation-state types (TO_REPLY / FYI / ACTIONED / AWAITING_REPLY)
- * because a real meeting invite can land in TO_REPLY.
+ * Rationale: legacy learned-pattern rules predate the Calendar label, so a
+ * real calendar event can still land in Notification / Urgent / etc. The
+ * keyword backstop must continue to give Haiku a chance to decide for those
+ * cases. The "TD Furn" rule is the user-controlled opt-out — it catches our
+ * own daily digest (which mentions calendar terms in its narrative) and
+ * other internal TD Furn mail that we don't want the reconciler to touch.
  */
-const NON_CALENDAR_SYSTEM_TYPES = new Set<string>([
-  "NEWSLETTER",
-  "MARKETING",
-  "RECEIPT",
-  "NOTIFICATION",
-  "COLD_EMAIL",
-]);
-
-/**
- * Custom rule names that should also block reconciliation. Use sparingly —
- * prefer routing messages to a NON_CALENDAR_SYSTEM_TYPES rule instead. The
- * "Internal" rule is the explicit user-defined opt-out for app-generated
- * mail (e.g. the daily digest, which mentions calendar terms in its narrative).
- */
-const NON_CALENDAR_RULE_NAMES = new Set<string>(["Internal"]);
+const NON_CALENDAR_RULE_NAMES = new Set<string>(["TD Furn"]);
 
 async function getMessageClassification({
   emailAccountId,
@@ -246,15 +235,12 @@ export async function reconcileMessage({
         emailAccountId,
         messageId,
       });
-      // Hard skip: classifier already routed this to a clearly-non-calendar
-      // category. Don't pay for Haiku or pollute the ReconciliationRecord
-      // table with false-positive ledger rows.
-      if (
-        classification &&
-        ((classification.systemType !== null &&
-          NON_CALENDAR_SYSTEM_TYPES.has(classification.systemType)) ||
-          NON_CALENDAR_RULE_NAMES.has(classification.name))
-      ) {
+      // Hard skip ONLY for the explicit user-defined opt-out rule.
+      // Do NOT skip on non-calendar systemTypes — legacy learned-pattern
+      // rules predate the Calendar label, so real calendar events still
+      // route to Notification / Urgent / etc. The keyword backstop below
+      // must continue to give Haiku a chance to decide for those cases.
+      if (classification && NON_CALENDAR_RULE_NAMES.has(classification.name)) {
         logger.info("reconcile_skip_classified_non_calendar", {
           emailAccountId,
           messageId,
