@@ -216,7 +216,7 @@ describe("matchesKeywordBackstop", () => {
 describe("reconcileMessage — pre-existing flow", () => {
   it("Test B: Path B via CALENDAR ExecutedRule match", async () => {
     vi.mocked(prisma.executedRule.findFirst).mockResolvedValue({
-      id: "er_1",
+      rule: { systemType: "CALENDAR", name: "Calendar" },
     } as never);
 
     await expect(
@@ -249,6 +249,85 @@ describe("reconcileMessage — pre-existing flow", () => {
     ).resolves.toBeUndefined();
 
     expect(extractCandidateEvent).toHaveBeenCalledOnce();
+  });
+
+  it("skips when classifier already labeled the message non-calendar (NEWSLETTER systemType)", async () => {
+    vi.mocked(prisma.executedRule.findFirst).mockResolvedValue({
+      rule: { systemType: "NEWSLETTER", name: "Newsletters" },
+    } as never);
+
+    await expect(
+      reconcileMessage({
+        // Subject contains "reminder" — would otherwise trigger the keyword
+        // backstop and proceed to Haiku.
+        parsedMessage: makeMessage({
+          subject: "Reminder: confirm your subscription",
+          textPlain: "...",
+        }),
+        emailAccount,
+        emailAccountId: "acct_1",
+        logger: makeLogger(),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractCandidateEvent).not.toHaveBeenCalled();
+    expect(findExistingReconciliationRecord).not.toHaveBeenCalled();
+    expect(createReconciliationRecord).not.toHaveBeenCalled();
+  });
+
+  it("skips when classifier matched a user 'Internal' rule (digest opt-out)", async () => {
+    vi.mocked(prisma.executedRule.findFirst).mockResolvedValue({
+      rule: { systemType: null, name: "Internal" },
+    } as never);
+
+    await expect(
+      reconcileMessage({
+        parsedMessage: makeMessage({
+          subject: "Your daily digest — appointment reminders",
+          textPlain: "...",
+        }),
+        emailAccount,
+        emailAccountId: "acct_1",
+        logger: makeLogger(),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractCandidateEvent).not.toHaveBeenCalled();
+    expect(createReconciliationRecord).not.toHaveBeenCalled();
+  });
+
+  it("flips outcome to FAILED with no_resolvable_time when Haiku returns empty startISO", async () => {
+    // Haiku saw no resolvable event in the body — schema explicitly permits
+    // this via `startISO: ""`. The orchestrator must NOT attempt a Google
+    // events.insert (which would throw "Invalid time value" inside
+    // create-event.ts on `new Date(Date.parse("") + 1h).toISOString()`).
+    vi.mocked(extractCandidateEvent).mockResolvedValue({
+      title: "",
+      startISO: "",
+      endISO: null,
+      location: null,
+      attendees: [],
+      confidence: 0,
+      isAllDay: false,
+    });
+
+    await expect(
+      reconcileMessage({
+        parsedMessage: makeMessage({
+          subject: "Appointment reminder",
+          textPlain: "...",
+        }),
+        emailAccount,
+        emailAccountId: "acct_1",
+        logger: makeLogger(),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(createCalendarEvent).not.toHaveBeenCalled();
+    expect(updateReconciliationRecord).toHaveBeenCalledWith({
+      id: "rec_1",
+      data: { outcome: "FAILED", errorMessage: "no_resolvable_time" },
+    });
   });
 
   it("Test D: Path C skip — no .ics, no ExecutedRule, no keyword", async () => {

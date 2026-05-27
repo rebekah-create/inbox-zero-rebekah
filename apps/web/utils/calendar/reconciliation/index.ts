@@ -83,22 +83,42 @@ export function matchesKeywordBackstop({
   return CALENDAR_KEYWORDS.some((kw) => haystack.includes(kw));
 }
 
-async function isClassifiedAsCalendar({
+/**
+ * SystemTypes the classifier already decided are categorically not calendar
+ * events. When the message has been routed to one of these, the keyword
+ * backstop is overruled and the reconciler short-circuits before Haiku runs.
+ *
+ * Excludes conversation-state types (TO_REPLY / FYI / ACTIONED / AWAITING_REPLY)
+ * because a real meeting invite can land in TO_REPLY.
+ */
+const NON_CALENDAR_SYSTEM_TYPES = new Set<string>([
+  "NEWSLETTER",
+  "MARKETING",
+  "RECEIPT",
+  "NOTIFICATION",
+  "COLD_EMAIL",
+]);
+
+/**
+ * Custom rule names that should also block reconciliation. Use sparingly —
+ * prefer routing messages to a NON_CALENDAR_SYSTEM_TYPES rule instead. The
+ * "Internal" rule is the explicit user-defined opt-out for app-generated
+ * mail (e.g. the daily digest, which mentions calendar terms in its narrative).
+ */
+const NON_CALENDAR_RULE_NAMES = new Set<string>(["Internal"]);
+
+async function getMessageClassification({
   emailAccountId,
   messageId,
 }: {
   emailAccountId: string;
   messageId: string;
-}): Promise<boolean> {
+}): Promise<{ systemType: string | null; name: string } | null> {
   const executed = await prisma.executedRule.findFirst({
-    where: {
-      emailAccountId,
-      messageId,
-      rule: { systemType: "CALENDAR" },
-    },
-    select: { id: true },
+    where: { emailAccountId, messageId },
+    select: { rule: { select: { systemType: true, name: true } } },
   });
-  return executed !== null;
+  return executed?.rule ?? null;
 }
 
 function truncateBody(parsedMessage: ParsedMessage): string {
@@ -222,10 +242,27 @@ export async function reconcileMessage({
     let bodyTruncated = "";
 
     if (!pathA) {
-      const isCalendar = await isClassifiedAsCalendar({
+      const classification = await getMessageClassification({
         emailAccountId,
         messageId,
       });
+      // Hard skip: classifier already routed this to a clearly-non-calendar
+      // category. Don't pay for Haiku or pollute the ReconciliationRecord
+      // table with false-positive ledger rows.
+      if (
+        classification &&
+        ((classification.systemType !== null &&
+          NON_CALENDAR_SYSTEM_TYPES.has(classification.systemType)) ||
+          NON_CALENDAR_RULE_NAMES.has(classification.name))
+      ) {
+        logger.info("reconcile_skip_classified_non_calendar", {
+          emailAccountId,
+          messageId,
+          threadId,
+        });
+        return;
+      }
+      const isCalendar = classification?.systemType === "CALENDAR";
       bodyTruncated = truncateBody(parsedMessage);
       pathB =
         isCalendar || matchesKeywordBackstop({ subject, body: bodyTruncated });
@@ -337,6 +374,31 @@ export async function reconcileMessage({
       recordId = created.record.id;
     }
 
+    // 4.5 Empty-startISO short-circuit. Haiku's schema (extract.ts:22-26)
+    // explicitly permits `startISO === ""` to signal "no resolvable event."
+    // The keyword backstop is lenient by design (e.g. `confirmation`,
+    // `reminder`) and routinely accepts marketing / newsletter / receipt copy
+    // that mentions those words — Haiku is the gatekeeper that says no.
+    //
+    // Without this guard the orchestrator routes such cases to outcome=CREATED
+    // and calls `createCalendarEvent`, where `new Date(Date.parse("") + 1h)
+    // .toISOString()` throws `RangeError: Invalid time value` (the symptom in
+    // production logs). Persist a clean FAILED ledger row instead so we keep
+    // visibility into backstop false-positives without crashing.
+    if (!candidate.startISO) {
+      logger.info("reconcile_route", {
+        emailAccountId,
+        messageId,
+        threadId,
+        outcome: "FAILED",
+      });
+      await updateReconciliationRecord({
+        id: recordId,
+        data: { outcome: "FAILED", errorMessage: "no_resolvable_time" },
+      });
+      return;
+    }
+
     // 5. Determine outcome (D-13). The Phase 11 flow replaces token-Dice with
     //    pure interval-overlap + arbitrate-if-overlap. Path A (.ics) is a
     //    deterministic CREATE per D-14 — iCalendar UIDs handle dedup upstream.
@@ -413,8 +475,9 @@ export async function reconcileMessage({
             dayScheduleCount: allDay.sameDateEvents.length,
           });
         }
-      } else if (candidate.startISO) {
+      } else {
         // D-01/D-02 timed branch — pure interval intersection.
+        // (candidate.startISO is guaranteed non-empty by the 4.5 guard above.)
         const overlaps = findIntervalOverlaps({
           candidateStartISO: candidate.startISO,
           candidateEndISO: candidate.endISO,
@@ -472,16 +535,6 @@ export async function reconcileMessage({
             dayScheduleCount: daySchedule.length,
           });
         }
-      } else {
-        // No resolvable start time — keep parity with prior behavior: CREATE
-        // so the record carries the candidate metadata.
-        outcome = "CREATED";
-        logger.info("reconcile_route", {
-          emailAccountId,
-          messageId,
-          threadId,
-          outcome,
-        });
       }
     } else {
       // pathA (.ics) — Phase 9 deterministic CREATE path (D-14). iCal UID
