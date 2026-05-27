@@ -9,10 +9,16 @@ vi.mock("@/utils/prisma", () => ({
 }));
 
 const mockEventsInsert = vi.fn();
+const mockEventsGet = vi.fn();
+const mockEventsPatch = vi.fn();
 
 vi.mock("@/utils/calendar/client", () => ({
   getCalendarClientWithRefresh: vi.fn(async () => ({
-    events: { insert: mockEventsInsert },
+    events: {
+      insert: mockEventsInsert,
+      get: mockEventsGet,
+      patch: mockEventsPatch,
+    },
   })),
 }));
 
@@ -23,6 +29,7 @@ import {
   buildBackRefDescription,
   createCalendarEvent,
   type CreateCalendarEventInput,
+  patchEventDescription,
 } from "./create-event";
 
 const EMAIL_ACCOUNT_ID = "test-account-id";
@@ -75,6 +82,8 @@ function mockConnection() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockEventsInsert.mockReset();
+  mockEventsGet.mockReset();
+  mockEventsPatch.mockReset();
 });
 
 describe("createCalendarEvent", () => {
@@ -287,6 +296,237 @@ describe("createCalendarEvent", () => {
 
     const result = await createCalendarEvent({ input: makeInput(), logger });
     expect(result).toEqual({ ok: false, reason: "api-error" });
+  });
+});
+
+describe("patchEventDescription", () => {
+  const OLD_EVENT_ID = "old-evt-1";
+  const APPEND_TEXT = "[Possibly rescheduled? See https://link]";
+
+  function patchInput(
+    overrides: Partial<{
+      emailAccountId: string;
+      eventId: string;
+      appendText: string;
+    }> = {},
+  ) {
+    return {
+      emailAccountId: EMAIL_ACCOUNT_ID,
+      eventId: OLD_EVENT_ID,
+      appendText: APPEND_TEXT,
+      ...overrides,
+    };
+  }
+
+  it("Test 1: returns no-connection when CalendarConnection is missing", async () => {
+    (prisma.calendarConnection.findFirst as any).mockResolvedValue(null);
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "no-connection" });
+    expect(mockEventsGet).not.toHaveBeenCalled();
+    expect(mockEventsPatch).not.toHaveBeenCalled();
+  });
+
+  it("Test 2: appends to existing description with double-newline separator", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({
+      data: { description: "Existing notes." },
+    });
+    mockEventsPatch.mockResolvedValue({ data: { id: OLD_EVENT_ID } });
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockEventsPatch).toHaveBeenCalledTimes(1);
+    const patchArgs = mockEventsPatch.mock.calls[0][0];
+    expect(patchArgs.requestBody).toEqual({
+      description: `Existing notes.\n\n${APPEND_TEXT}`,
+    });
+    expect(patchArgs.calendarId).toBe("primary");
+    expect(patchArgs.eventId).toBe(OLD_EVENT_ID);
+  });
+
+  it("Test 3: null/undefined existing description → newDescription is just appendText", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({ data: { description: null } });
+    mockEventsPatch.mockResolvedValue({ data: { id: OLD_EVENT_ID } });
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: true });
+    const patchArgs = mockEventsPatch.mock.calls[0][0];
+    expect(patchArgs.requestBody.description).toBe(APPEND_TEXT);
+    expect(patchArgs.requestBody.description.startsWith("\n")).toBe(false);
+  });
+
+  it("Test 4: idempotent when existing description already contains appendText", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({
+      data: {
+        description: `Existing notes.\n\n${APPEND_TEXT}`,
+      },
+    });
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockEventsPatch).not.toHaveBeenCalled();
+  });
+
+  it("Test 5: events.get throws with code 404 → event-not-found, patch not called", async () => {
+    mockConnection();
+    const err: any = new Error("Not Found");
+    err.code = 404;
+    mockEventsGet.mockRejectedValue(err);
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "event-not-found" });
+    expect(mockEventsPatch).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        emailAccountId: EMAIL_ACCOUNT_ID,
+        eventId: OLD_EVENT_ID,
+      }),
+    );
+  });
+
+  it("Test 6: events.get throws with response.status 404 → event-not-found", async () => {
+    mockConnection();
+    const err: any = new Error("Not Found");
+    err.response = { status: 404 };
+    mockEventsGet.mockRejectedValue(err);
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "event-not-found" });
+    expect(mockEventsPatch).not.toHaveBeenCalled();
+  });
+
+  it("Test 7: events.get throws with 500 → api-error", async () => {
+    mockConnection();
+    const err: any = new Error("Server Error");
+    err.response = { status: 500 };
+    mockEventsGet.mockRejectedValue(err);
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "api-error" });
+    expect(mockEventsPatch).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        emailAccountId: EMAIL_ACCOUNT_ID,
+        eventId: OLD_EVENT_ID,
+        error: expect.any(Error),
+      }),
+    );
+  });
+
+  it("Test 8: events.patch throws → api-error", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({ data: { description: "Existing." } });
+    mockEventsPatch.mockRejectedValue(new Error("Patch failed"));
+    const logger = makeLogger();
+
+    const result = await patchEventDescription({
+      input: patchInput(),
+      logger,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "api-error" });
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        emailAccountId: EMAIL_ACCOUNT_ID,
+        eventId: OLD_EVENT_ID,
+        error: expect.any(Error),
+      }),
+    );
+  });
+
+  it("Test 9: patch requestBody NEVER contains start/end/summary/location/attendees (D-09 invariant)", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({
+      data: { description: "Existing notes." },
+    });
+    mockEventsPatch.mockResolvedValue({ data: { id: OLD_EVENT_ID } });
+    const logger = makeLogger();
+
+    await patchEventDescription({ input: patchInput(), logger });
+
+    const requestBody = mockEventsPatch.mock.calls[0][0].requestBody;
+    expect(requestBody).not.toHaveProperty("start");
+    expect(requestBody).not.toHaveProperty("end");
+    expect(requestBody).not.toHaveProperty("summary");
+    expect(requestBody).not.toHaveProperty("location");
+    expect(requestBody).not.toHaveProperty("attendees");
+    expect(Object.keys(requestBody)).toEqual(["description"]);
+  });
+
+  it("Test 10: PII-safe logging — error payload contains no description/title/location/summary fields", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({
+      data: { description: "Sensitive existing notes." },
+    });
+    mockEventsPatch.mockRejectedValue(new Error("Boom"));
+    const logger = makeLogger();
+
+    await patchEventDescription({ input: patchInput(), logger });
+
+    const payload = (logger.error as any).mock.calls[0][1];
+    expect(payload).toEqual(
+      expect.not.objectContaining({
+        description: expect.any(String),
+        title: expect.any(String),
+        location: expect.any(String),
+        summary: expect.any(String),
+        appendText: expect.any(String),
+      }),
+    );
+  });
+
+  it("Test 11: getCalendarClientWithRefresh called with emailAccountId (T-09-06)", async () => {
+    mockConnection();
+    mockEventsGet.mockResolvedValue({ data: { description: null } });
+    mockEventsPatch.mockResolvedValue({ data: { id: OLD_EVENT_ID } });
+    const logger = makeLogger();
+
+    await patchEventDescription({ input: patchInput(), logger });
+
+    expect(getCalendarClientWithRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({ emailAccountId: EMAIL_ACCOUNT_ID }),
+    );
   });
 });
 
