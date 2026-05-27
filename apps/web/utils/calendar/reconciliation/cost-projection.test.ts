@@ -37,7 +37,9 @@ vi.mock("@/utils/usage", async (importOriginal) => {
 });
 
 // Import AFTER mock so the wrapper above intercepts createGenerateObject's call.
+import type { NormalizedCalendarEvent } from "@/utils/calendar/upcoming-events-types";
 import type { EmailAccountWithAI } from "@/utils/llms/types";
+import { arbitrateOverlap } from "./arbitrate";
 import { extractCandidateEvent } from "./extract";
 
 const RUN = process.env.RUN_AI_TESTS === "true";
@@ -55,6 +57,15 @@ const PRICE_OUTPUT_PER_M = 5.0; // $/1M output tokens
 const MONTHLY_VOLUME = 90; // CONTEXT mid-estimate (30-90 calls/mo)
 const PESSIMISTIC_VOLUME = 200; // 4x safety margin per OPS-02 review
 const COST_BUDGET_PER_MONTH = 1.0; // $/mo extraction budget ($10/mo cap minus headroom)
+
+// Phase 11 cost ceilings (11-CONTEXT.md success criterion 6 + 11-06 plan).
+// Both Haiku calls (extract + arbitrate) MUST stay within these bounds:
+//   - per-message worst case (extract + arbitrate combined) <= $0.01
+//   - projected monthly cost at PESSIMISTIC_VOLUME=200 with 30% overlap rate
+//     <= $2.00 (leaves $8/mo headroom under the $10/mo overall cap)
+const PER_MESSAGE_COST_CEILING = 0.01;
+const COMBINED_MONTHLY_BUDGET = 2.0;
+const ARBITRATION_RATE = 0.3; // fraction of extract calls that trigger arbiter
 
 function makeEmailAccount(): EmailAccountWithAI {
   return {
@@ -163,5 +174,186 @@ describe.runIf(RUN)(
       expect(projectedMonthly).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
       expect(projectedPessimistic).toBeLessThanOrEqual(COST_BUDGET_PER_MONTH);
     }, 300_000);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Phase 11 — arbitration cost projection (11-06).
+// Mirrors the extract block above: spies on saveAiUsage across the LIVE
+// arbitrateOverlap path, computes real per-call cost from captured tokens,
+// then asserts both the combined per-message worst-case ceiling and the
+// monthly projection under PESSIMISTIC_VOLUME with a 30% arbitration rate.
+//
+// Fixtures with shouldCallArbiter=false are skipped here — they make zero
+// API calls by design.
+// ---------------------------------------------------------------------------
+
+type ArbitrationFixtureScheduleEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end: string | null;
+  location: string | null;
+  isAllDay: boolean;
+};
+
+type ArbitrationFixture = {
+  id: string;
+  input: { from: string; subject: string; bodyTruncated: string };
+  candidate: {
+    title: string;
+    startISO: string;
+    endISO: string | null;
+    location: string | null;
+  };
+  daySchedule: ArbitrationFixtureScheduleEvent[];
+  expectedArbitration: { shouldCallArbiter: boolean };
+};
+
+function toNormalizedForCost(
+  e: ArbitrationFixtureScheduleEvent,
+): NormalizedCalendarEvent {
+  return {
+    id: e.id,
+    title: e.title,
+    start: e.start,
+    end: e.end ?? "",
+    location: e.location,
+    isAllDay: e.isAllDay,
+    attendees: [],
+    description: null,
+    htmlLink: "",
+  } as NormalizedCalendarEvent;
+}
+
+describe.runIf(RUN)(
+  "arbitrate.ai — cost projection (Phase 11, real token capture)",
+  () => {
+    beforeEach(() => {
+      saveAiUsageSpy.mockClear();
+    });
+
+    it("combined extract+arbitrate per-message worst case <= $0.01 and projected monthly <= $2 at PESSIMISTIC_VOLUME", async () => {
+      const FIXTURES_ROOT = join(
+        import.meta.dirname,
+        "../../../__tests__/fixtures/reconciliation",
+      );
+
+      // --- Pass A: capture EXTRACT costs across the labeled corpus (same
+      //     as the extract block above; re-run here to keep the two passes
+      //     symmetric and so this block stands alone if extract is later
+      //     refactored out).
+      const labeled = readdirSync(join(FIXTURES_ROOT, "labeled"))
+        .filter((f) => f.endsWith(".json"))
+        .map((f) =>
+          JSON.parse(readFileSync(join(FIXTURES_ROOT, "labeled", f), "utf-8")),
+        );
+      expect(labeled.length).toBeGreaterThanOrEqual(5);
+
+      for (const fx of labeled) {
+        await extractCandidateEvent({
+          email: {
+            from: fx.input.from,
+            subject: fx.input.subject,
+            bodyTruncated: fx.input.bodyTruncated,
+          },
+          emailAccount: makeEmailAccount(),
+          logger: makeMockLogger(),
+        });
+      }
+      const extractCallCount = saveAiUsageSpy.mock.calls.length;
+      expect(extractCallCount).toBe(labeled.length);
+      const extractCosts = saveAiUsageSpy.mock.calls.map((args) =>
+        perCallCost((args[0] as { usage: UsagePayload }).usage),
+      );
+      const avgExtractCost =
+        extractCosts.reduce((s, c) => s + c, 0) / extractCosts.length;
+      const maxExtractCost = Math.max(...extractCosts);
+
+      // --- Pass B: capture ARBITRATE costs across the arbitration corpus,
+      //     limited to fixtures that actually make the call.
+      saveAiUsageSpy.mockClear();
+      const arbitration: ArbitrationFixture[] = readdirSync(
+        join(FIXTURES_ROOT, "arbitration"),
+      )
+        .filter((f) => f.endsWith(".json"))
+        .map((f) =>
+          JSON.parse(
+            readFileSync(join(FIXTURES_ROOT, "arbitration", f), "utf-8"),
+          ),
+        );
+
+      const callable = arbitration.filter(
+        (fx) => fx.expectedArbitration.shouldCallArbiter,
+      );
+      expect(callable.length).toBeGreaterThanOrEqual(3);
+
+      for (const fx of callable) {
+        await arbitrateOverlap({
+          email: fx.input,
+          candidate: fx.candidate,
+          daySchedule: fx.daySchedule.map(toNormalizedForCost),
+          emailAccount: makeEmailAccount(),
+          logger: makeMockLogger(),
+        });
+      }
+      const arbitrateCallCount = saveAiUsageSpy.mock.calls.length;
+      expect(arbitrateCallCount).toBe(callable.length);
+      const arbitrateCosts = saveAiUsageSpy.mock.calls.map((args) =>
+        perCallCost((args[0] as { usage: UsagePayload }).usage),
+      );
+      const avgArbitrateCost =
+        arbitrateCosts.reduce((s, c) => s + c, 0) / arbitrateCosts.length;
+      const maxArbitrateCost = Math.max(...arbitrateCosts);
+
+      // --- Ceilings ----------------------------------------------------
+      //
+      // Worst-case per-message cost = worst-extract + worst-arbitrate.
+      // (Every reconciled message extracts once; only overlap-bearing
+      // messages also arbitrate. The worst-case message pays both.)
+      const worstCasePerMessageCost = maxExtractCost + maxArbitrateCost;
+
+      // Projected monthly cost = extract-per-message * volume + arbitrate
+      // -per-message * (volume * ARBITRATION_RATE). Uses PESSIMISTIC_VOLUME
+      // (200/mo) per the OPS-02 + Phase 11 4x safety margin.
+      const projectedMonthlyCost =
+        avgExtractCost * PESSIMISTIC_VOLUME +
+        avgArbitrateCost * PESSIMISTIC_VOLUME * ARBITRATION_RATE;
+
+      console.log(
+        JSON.stringify(
+          {
+            phase: "11-06 arbitration cost projection",
+            fixtureCounts: {
+              labeled: labeled.length,
+              arbitrationCallable: callable.length,
+            },
+            avgExtractCostUsd: avgExtractCost,
+            avgArbitrateCostUsd: avgArbitrateCost,
+            maxExtractCostUsd: maxExtractCost,
+            maxArbitrateCostUsd: maxArbitrateCost,
+            worstCasePerMessageCostUsd: worstCasePerMessageCost,
+            projectedMonthlyCostUsd: projectedMonthlyCost,
+            pessimisticVolume: PESSIMISTIC_VOLUME,
+            arbitrationRate: ARBITRATION_RATE,
+            perMessageCeiling: PER_MESSAGE_COST_CEILING,
+            combinedMonthlyBudget: COMBINED_MONTHLY_BUDGET,
+            pricingSnapshotDate: "2026-05-22",
+          },
+          null,
+          2,
+        ),
+      );
+
+      // Assertion: worstCasePerMessageCost <= 0.01 (per 11-CONTEXT.md success
+      // criterion 6).
+      expect(worstCasePerMessageCost).toBeLessThanOrEqual(
+        PER_MESSAGE_COST_CEILING,
+      );
+      // Assertion: projectedMonthlyCost <= 2.00 at PESSIMISTIC_VOLUME=200
+      // with 30% arbitration rate (leaves $8/mo headroom under the
+      // $10/mo overall cap).
+      expect(projectedMonthlyCost).toBeLessThanOrEqual(COMBINED_MONTHLY_BUDGET);
+    }, 600_000);
   },
 );
