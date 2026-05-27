@@ -1,0 +1,33 @@
+{
+  "id": "05-marketing-skip",
+  "category": "arbitration",
+  "source": "Synthetic — marketing email that trips the keyword backstop ('book your appointment', 'schedule') without containing a real time-bound commitment. Models the SKIP safety valve.",
+  "input": {
+    "from": "promo@brilliantsmilesdental.com",
+    "subject": "Book your appointment today — limited slots available!",
+    "bodyTruncated": "Hi Rebekah,\n\nIt's been a while since your last visit! Book your appointment today and receive a complimentary whitening consultation.\n\nOur calendar is open for cleanings, exams, and cosmetic consultations all spring. Click the button below to schedule a time that works for you.\n\n[BOOK NOW]\n\nWe also offer evening and Saturday appointments. Don't wait — our spring schedule fills up fast!\n\nBrilliant Smiles Dental\n123 Main St, Clermont, FL 34711",
+    "timezone": "America/New_York"
+  },
+  "candidate": {
+    "title": "Book appointment - Brilliant Smiles Dental",
+    "startISO": "2026-05-26T18:00:00-04:00",
+    "endISO": "2026-05-26T19:00:00-04:00",
+    "location": "123 Main St, Clermont, FL 34711"
+  },
+  "daySchedule": [
+    {
+      "id": "evt_coincidental",
+      "title": "Family dinner",
+      "start": "2026-05-26T18:00:00-04:00",
+      "end": "2026-05-26T19:30:00-04:00",
+      "location": "",
+      "isAllDay": false
+    }
+  ],
+  "expectedArbitration": {
+    "shouldCallArbiter": true,
+    "verdict": "SKIP",
+    "matchedEventIdRef": null
+  },
+  "notes": "Marketing CTA false positive — keywords 'book your appointment' / 'schedule' tripped the reconciliation pre-filter, and the extractor hallucinated a startISO (or the email's send-time was promoted to a candidate interval). The daySchedule happens to contain a 6 PM 'Family dinner' that overlaps the hallucinated interval, so the arbiter IS called. The arbiter should recognize the body as generic marketing (no specific committed time slot, CTA button instead of a concrete appointment) and return SKIP. This is the safety-valve test: the SEPARATE default would create a spurious 'Book appointment' event on the calendar; SKIP is the correct outcome per D-06."
+}

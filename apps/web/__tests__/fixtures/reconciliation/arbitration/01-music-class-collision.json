@@ -1,0 +1,41 @@
+{
+  "id": "01-music-class-collision",
+  "category": "arbitration",
+  "source": "Synthetic — faithful approximation of the 2026-05-26 Gmail thread that triggered the AMBIGUOUS bug. Real thread is intentionally paraphrased (sender + body redacted) to avoid leaking inbox content into a committed repo file; date and time semantics preserved verbatim.",
+  "input": {
+    "from": "noreply@stepupmusicacademy.com",
+    "subject": "Reminder: Piano Class tonight at 7:30 PM",
+    "bodyTruncated": "Hi Rebekah,\n\nThis is a friendly reminder that Madi has Piano Class tonight, Tuesday May 26, 2026 at 7:30 PM with Mr. Daniels at Step Up Music Academy.\n\nLocation: 1240 Oakland Ave, Clermont, FL 34711\nDuration: 30 minutes\n\nPlease arrive 5 minutes early so we can start on time. If you need to cancel or reschedule, please reply to this email or call (352) 555-0142.\n\nSee you tonight!\nStep Up Music Academy",
+    "timezone": "America/New_York"
+  },
+  "candidate": {
+    "title": "Piano Class",
+    "startISO": "2026-05-26T19:30:00-04:00",
+    "endISO": "2026-05-26T20:00:00-04:00",
+    "location": "1240 Oakland Ave, Clermont, FL 34711"
+  },
+  "daySchedule": [
+    {
+      "id": "evt_math",
+      "title": "Math Class",
+      "start": "2026-05-26T16:00:00-04:00",
+      "end": "2026-05-26T17:00:00-04:00",
+      "location": "",
+      "isAllDay": false
+    },
+    {
+      "id": "evt_music",
+      "title": "Music lessons",
+      "start": "2026-05-26T19:00:00-04:00",
+      "end": "2026-05-26T20:00:00-04:00",
+      "location": "",
+      "isAllDay": false
+    }
+  ],
+  "expectedArbitration": {
+    "shouldCallArbiter": true,
+    "verdict": "SAME",
+    "matchedEventIdRef": "evt_music"
+  },
+  "notes": "THE regression test for the 2026-05-26 Piano-vs-Math AMBIGUOUS incident. Under Phase 9 token-Dice the 7:30 PM Piano reminder false-matched the 4 PM 'Math Class' on the shared 'Class' token. Under Phase 11: candidate 7:30-8:00 PM time-overlaps the actual 'Music lessons' 7-8 PM block; arbiter reads 'Piano Class' vs 'Music lessons' and collapses them semantically -> SAME, matchedEventId=evt_music. The 4 PM Math Class is in the daySchedule but does NOT overlap the candidate interval, so the arbiter should never even see it as a candidate match. If verdict !== 'SAME' or matchedEventId !== 'evt_music', the regression has reoccurred."
+}
