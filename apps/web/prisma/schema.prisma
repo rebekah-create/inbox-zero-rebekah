@@ -909,6 +909,7 @@ model ReconciliationRecord {
   outcome             ReconciliationOutcome
   googleEventId       String?
   googleEventHtmlLink String?
+  rescheduleOfEventId String? // Phase 11: when outcome=RESCHEDULE, holds the Google event id of the OLD event that this email superseded. The new event id is in googleEventId.
 
   extractedTitle      String
   extractedStart      DateTime
@@ -930,6 +931,7 @@ enum ReconciliationOutcome {
   MATCHED
   CREATED
   AMBIGUOUS
+  RESCHEDULE
   PENDING
   FAILED
 }
