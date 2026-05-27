@@ -139,7 +139,7 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 6. Total per-message AI spend remains ≤ $0.01 worst-case (1× extract + 1× arbitrate); no-overlap path stays at 1× extract
 7. Eval corpus from Phase 9 (`09-08-PLAN.md` fixtures) passes under the new matcher; new fixture cases added for the music-class collision class and the >7-day-out CREATE case
 
-**Plans:** 1/6 plans executed
+**Plans:** 4/6 plans executed
 Plans:
 **Wave 1**
 
@@ -147,9 +147,9 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 11-02-PLAN.md — overlap.ts pure interval helper, simplify match.ts to all-day, delete dice.ts
-- [ ] 11-03-PLAN.md — arbitrate.ts rewrite: 4-outcome verdict + prompt caching + day-schedule context
-- [ ] 11-04-PLAN.md — patchEventDescription helper (non-destructive Google events.patch description-only)
+- [x] 11-02-PLAN.md — overlap.ts pure interval helper, simplify match.ts to all-day, delete dice.ts
+- [x] 11-03-PLAN.md — arbitrate.ts rewrite: 4-outcome verdict + prompt caching + day-schedule context
+- [x] 11-04-PLAN.md — patchEventDescription helper (non-destructive Google events.patch description-only)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
