@@ -1,0 +1,41 @@
+{
+  "id": "03-camping-future-date",
+  "category": "arbitration",
+  "source": "Synthetic — campground confirmation in an August 2026 weekend; daySchedule represents an empty (or unrelated-day) calendar view. Models the typical 1-6 month lead time for camping reservations.",
+  "input": {
+    "from": "reservations@reserveamerica.com",
+    "subject": "Your Hillsborough River State Park reservation is confirmed",
+    "bodyTruncated": "Hello Rebekah,\n\nYour camping reservation at Hillsborough River State Park is confirmed.\n\nCheck-in: Friday, August 14, 2026 at 3:00 PM\nCheck-out: Sunday, August 16, 2026 at 1:00 PM\nSite: Tent Site 47\nConfirmation #: HR-2026-88234\n\nWe look forward to your visit. Please review our cancellation policy at the link below.\n\nReserveAmerica",
+    "timezone": "America/New_York"
+  },
+  "candidate": {
+    "title": "Hillsborough River State Park camping",
+    "startISO": "2026-08-14T15:00:00-04:00",
+    "endISO": "2026-08-16T13:00:00-04:00",
+    "location": "Hillsborough River State Park"
+  },
+  "daySchedule": [
+    {
+      "id": "evt_unrelated_a",
+      "title": "Madi Art class",
+      "start": "2026-05-28T16:30:00-04:00",
+      "end": "2026-05-28T17:30:00-04:00",
+      "location": "Bridgewater",
+      "isAllDay": false
+    },
+    {
+      "id": "evt_unrelated_b",
+      "title": "Bekah therapy",
+      "start": "2026-05-29T15:00:00-04:00",
+      "end": "2026-05-29T16:00:00-04:00",
+      "location": "",
+      "isAllDay": false
+    }
+  ],
+  "expectedArbitration": {
+    "shouldCallArbiter": false,
+    "verdict": null,
+    "matchedEventIdRef": null
+  },
+  "notes": "Tests the >14-day-out CREATE path. The candidate is in mid-August; the daySchedule contains only late-May events. findIntervalOverlaps returns [] -> arbiter never called -> deterministic CREATE. Phase 9 would also have CREATEd this (no title sim hit), but Phase 11 makes the no-overlap branch explicit and free. The daySchedule here intentionally contains real-looking unrelated events (not an empty array) to confirm the overlap check is the gate, not the schedule's size."
+}

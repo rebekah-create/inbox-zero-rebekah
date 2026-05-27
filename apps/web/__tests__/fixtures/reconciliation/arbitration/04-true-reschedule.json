@@ -1,0 +1,33 @@
+{
+  "id": "04-true-reschedule",
+  "category": "arbitration",
+  "source": "Synthetic — typical Orlando Health reschedule notification shape. Body explicitly contains 'moved' / 'rescheduled' wording per D-09 / arbiter prompt example C.",
+  "input": {
+    "from": "noreply@orlandohealth.com",
+    "subject": "Your appointment has been rescheduled",
+    "bodyTruncated": "Dear Rebekah,\n\nYour appointment with Dr. Patel, originally scheduled for Monday, June 1, 2026 at 9:00 AM, has been moved to Wednesday, June 3, 2026 at 2:00 PM.\n\nProvider: Dr. Anjali Patel\nLocation: Orlando Health South Lake Hospital, 1900 Don Wickham Dr, Clermont, FL 34711\nReason for visit: Annual physical\n\nIf this new time does not work, please call (352) 394-4071 to reschedule.\n\nThank you,\nOrlando Health",
+    "timezone": "America/New_York"
+  },
+  "candidate": {
+    "title": "Dr. Patel appointment",
+    "startISO": "2026-06-03T14:00:00-04:00",
+    "endISO": "2026-06-03T15:00:00-04:00",
+    "location": "Orlando Health South Lake Hospital, 1900 Don Wickham Dr, Clermont, FL 34711"
+  },
+  "daySchedule": [
+    {
+      "id": "evt_old",
+      "title": "Dr. Patel - Annual Physical",
+      "start": "2026-06-03T14:00:00-04:00",
+      "end": "2026-06-03T15:00:00-04:00",
+      "location": "Orlando Health South Lake Hospital",
+      "isAllDay": false
+    }
+  ],
+  "expectedArbitration": {
+    "shouldCallArbiter": true,
+    "verdict": "RESCHEDULE",
+    "matchedEventIdRef": "evt_old"
+  },
+  "notes": "Tests the RESCHEDULE verdict. NB: in real life the orchestrator passes the day of the NEW candidate (June 3) as the daySchedule; for the eval fixture we model the OLD event as appearing on the same day for simplicity — the candidate interval and matched OLD event share the June 3 14:00 slot, which produces an overlap that triggers the arbiter. The body wording ('originally scheduled for...', 'has been moved to...') is the explicit reschedule signal the arbiter looks for. Expected verdict='RESCHEDULE', matchedEventId='evt_old'."
+}

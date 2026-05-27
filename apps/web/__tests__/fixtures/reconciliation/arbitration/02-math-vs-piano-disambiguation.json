@@ -1,0 +1,33 @@
+{
+  "id": "02-math-vs-piano-disambiguation",
+  "category": "arbitration",
+  "source": "Synthetic — companion to fixture 01, isolates the no-overlap CREATE path. No music block on the day; only an unrelated 4 PM Math Class.",
+  "input": {
+    "from": "noreply@stepupmusicacademy.com",
+    "subject": "Reminder: Piano Class tonight at 7:30 PM",
+    "bodyTruncated": "Hi Rebekah,\n\nThis is a friendly reminder that Madi has Piano Class tonight, Wednesday May 27, 2026 at 7:30 PM with Mr. Daniels at Step Up Music Academy.\n\nLocation: 1240 Oakland Ave, Clermont, FL 34711\nDuration: 30 minutes\n\nPlease arrive 5 minutes early. If you need to cancel or reschedule, reply to this email or call (352) 555-0142.\n\nStep Up Music Academy",
+    "timezone": "America/New_York"
+  },
+  "candidate": {
+    "title": "Piano Class",
+    "startISO": "2026-05-27T19:30:00-04:00",
+    "endISO": "2026-05-27T20:00:00-04:00",
+    "location": "1240 Oakland Ave, Clermont, FL 34711"
+  },
+  "daySchedule": [
+    {
+      "id": "evt_math",
+      "title": "Math Class",
+      "start": "2026-05-27T16:00:00-04:00",
+      "end": "2026-05-27T17:00:00-04:00",
+      "location": "",
+      "isAllDay": false
+    }
+  ],
+  "expectedArbitration": {
+    "shouldCallArbiter": false,
+    "verdict": null,
+    "matchedEventIdRef": null
+  },
+  "notes": "Validates the 11-02 interval-overlap substrate: candidate 7:30-8:00 PM does NOT overlap the 4-5 PM Math Class, so findIntervalOverlaps returns []. The arbiter is never called and the orchestrator CREATEs the event deterministically. This is the false-positive avoidance test for the 2026-05-26 incident — under Phase 11 the bug is dodged at the matching layer without burning a Haiku call."
+}
