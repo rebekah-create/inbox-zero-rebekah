@@ -139,11 +139,11 @@ pre-filter (Haiku CALENDAR label OR keyword backstop)  ← unchanged
 6. Total per-message AI spend remains ≤ $0.01 worst-case (1× extract + 1× arbitrate); no-overlap path stays at 1× extract
 7. Eval corpus from Phase 9 (`09-08-PLAN.md` fixtures) passes under the new matcher; new fixture cases added for the music-class collision class and the >7-day-out CREATE case
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 11-01-PLAN.md — Prisma migration: add RESCHEDULE enum + rescheduleOfEventId column
+- [x] 11-01-PLAN.md — Prisma migration: add RESCHEDULE enum + rescheduleOfEventId column
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
