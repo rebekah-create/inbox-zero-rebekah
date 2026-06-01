@@ -4,10 +4,11 @@ import type { CalendarActivityOutcome } from "./types";
 /**
  * D-11 sentence templates for Calendar Activity rows (Phase 10).
  *
- * Templates (verbatim from 10-CONTEXT D-11):
- *   AMBIGUOUS -> "{Sender}: looks like it's about {extractedTitle} — review →"
- *   CREATED   -> "Added {extractedTitle} {day/time} to your calendar (from {sender}) →"
- *   MATCHED   -> "{Sender} confirmed {extractedTitle} — already on your calendar"
+ * Templates (verbatim from 10-CONTEXT D-11; RESCHEDULE added Phase 11):
+ *   AMBIGUOUS  -> "{Sender}: looks like it's about {extractedTitle} — review →"
+ *   CREATED    -> "Added {extractedTitle} {day/time} to your calendar (from {sender}) →"
+ *   MATCHED    -> "{Sender} confirmed {extractedTitle} — already on your calendar"
+ *   RESCHEDULE -> "Looks like {extractedTitle} moved to {day/time} — added the new time, flagged the old event (from {sender}) →"
  *
  * Day/time format for CREATED rows (RESEARCH §"Open Questions #3" recommendation):
  *   - Timed:   "{dayAbbrev} at {formatAgendaTime}"  e.g. "Mon at 9:00a"
@@ -50,11 +51,18 @@ export function renderSentence({
     case "AMBIGUOUS":
       return `${sender}: looks like it's about ${extractedTitle} — review →`;
     case "CREATED": {
-      const dayAbbrev = formatDayAbbrev(extractedStart);
-      const dayTime = isAllDay
-        ? dayAbbrev
-        : `${dayAbbrev} at ${formatAgendaTime({ iso: extractedStart.toISOString(), isAllDay: false })}`;
+      const dayTime = formatDayTime(extractedStart, isAllDay);
       return `Added ${extractedTitle} ${dayTime} to your calendar (from ${sender}) →`;
     }
+    case "RESCHEDULE": {
+      const dayTime = formatDayTime(extractedStart, isAllDay);
+      return `Looks like ${extractedTitle} moved to ${dayTime} — added the new time, flagged the old event (from ${sender}) →`;
+    }
   }
+}
+
+function formatDayTime(extractedStart: Date, isAllDay: boolean): string {
+  const dayAbbrev = formatDayAbbrev(extractedStart);
+  if (isAllDay) return dayAbbrev;
+  return `${dayAbbrev} at ${formatAgendaTime({ iso: extractedStart.toISOString(), isAllDay: false })}`;
 }

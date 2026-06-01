@@ -270,7 +270,7 @@ export async function runDailyDigest(logger: Logger) {
           where: {
             emailAccountId: account.id,
             createdAt: { gte: since24h },
-            outcome: { in: ["MATCHED", "CREATED", "AMBIGUOUS"] },
+            outcome: { in: ["MATCHED", "CREATED", "AMBIGUOUS", "RESCHEDULE"] },
           },
           orderBy: { extractedStart: "asc" },
         }),

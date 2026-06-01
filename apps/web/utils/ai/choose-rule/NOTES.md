@@ -8,68 +8,14 @@ When we receive an email for processing:
 
 We don't always perform the action immediately. We may need user confirmation from the user first.
 
-## Prompt Caching (Anthropic only, since Phase 8.5)
+## Prompt Caching — removed after v1.1 audit (2026-06-01)
 
-The classifier prompt in `ai-choose-rule.ts` uses Anthropic prompt caching to drop the input-token cost on the constant prefix to ~10% of uncached price. Implementation is gated on `modelOptions.provider === Provider.ANTHROPIC` via `isAnthropicProvider`; non-Anthropic providers keep the original `{ system, prompt }` call shape unchanged.
+Phase 8.5 added Anthropic ephemeral prompt caching to the classifier (and Phase 9/11 mirrored it for extraction/arbitration). **It never engaged in production** — the Anthropic Console showed zero cache usage over a 7-day window.
 
-### What caches vs what varies
+**Root cause:** the cacheable-prefix minimum is **2048 tokens for Haiku** (only 1024 for Opus/Sonnet). All three caching paths run on the economy/**Haiku** tier, but the prompts were sized to ~1500 tokens against the mistaken belief that the floor was 1024. A ~1500-token prefix on Haiku is below the floor, so Anthropic accepted the `cache_control` block, declined to cache, and billed full input price.
 
-| Segment | Lives in | Cacheable? |
-| --- | --- | --- |
-| Instructions (priority + guidelines + isPrimary_field block) | `system` string | YES — cached |
-| User rules list (`getUserRulesPrompt`) | `system` string | YES — cached |
-| Classification feedback (`formatClassificationFeedback`) | `system` string | YES — cached |
-| User-info block (`getUserInfoPrompt`) | `system` string | YES — cached |
-| Per-email body / subject / from / List-Unsubscribe note | `prompt` string → first user message | NO — varies per email |
+**Why we didn't just pad the prompts past 2048:** at single-user volume (~85 emails/day ≈ 1 per 17 min, 1–3 calendar emails/day) versus the 5-minute cache TTL, most calls would be lone cache-*writes* (1.25× input price) with no read to amortize them — so padding extract/arbitration would likely *raise* cost. Caching is the wrong tool at this scale.
 
-### Cut point: one ephemeral marker on the system message
+**Outcome:** `cache_control` removed from `ai-choose-rule.ts`, `extract-prompt.ts`, and `arbitrate.ts`; `system` is now a plain string for every provider. OPS-03 is reframed as not-viable at single-user volume. Full analysis: `.planning/v1.1-MILESTONE-AUDIT.md`.
 
-The full `system` text is sent as a single `SystemModelMessage` with `providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } }` at the **message level** (not on a content block). The per-email `prompt` stays as a plain string parameter — same shape as the non-Anthropic branch, only `system` varies. One breakpoint is sufficient for v1; multi-breakpoint caching (e.g., separating instructions from rules list) is a Phase 9+ optimization only if measurements justify it.
-
-### AI SDK pattern (mirror in Phase 9 extraction)
-
-```ts
-import type { SystemModelMessage } from "ai";
-
-function buildClassifierSystem(
-  systemText: string,
-  provider: string,
-): string | SystemModelMessage[] {
-  if (provider !== Provider.ANTHROPIC) return systemText;
-  return [
-    {
-      role: "system",
-      content: systemText,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
-    },
-  ];
-}
-
-const result = await generateObject({
-  ...modelOptions,
-  system: buildClassifierSystem(systemText, modelOptions.provider),
-  prompt,
-  schema,
-});
-```
-
-**Why this shape (and not the `messages` array variant the Anthropic docs show):**
-
-- `SystemModelMessage.content` is typed as `string` in AI SDK v6, NOT `TextPart[]`. You cannot put `providerOptions` on a system-message content block — the cache marker must live on the message itself.
-- Only `UserModelMessage.content` accepts `TextPart[]` with per-block `providerOptions`. The Anthropic docs' user-message-with-content-array example does work, but for our classifier the natural cut is system-vs-prompt, so the SystemModelMessage path is cleaner.
-- `system` accepts `string | SystemModelMessage | SystemModelMessage[]`, so swapping in `SystemModelMessage[]` for the Anthropic branch requires no other call-site changes (`prompt` stays string, `schema` stays the same — generic inference preserved).
-- Annotate the helper return as `string | SystemModelMessage[]` explicitly — without it, TS widens `cacheControl: { type: "ephemeral" }` to `{ type: string }` and the union won't satisfy the `system` parameter type. (Burned 4 CI rounds in 8.5 discovering this.)
-
-**Prompt hardening still applies:** `createGenerateObject` in `apps/web/utils/llms/index.ts` only hardens when `typeof options.system === 'string'`. On the Anthropic path we pass `system: SystemModelMessage[]` so hardening is skipped — acceptable for the classifier (Phase 8.5 CONTEXT D-02). If Phase 9's extraction or any future cached prompt needs hardening, fold `applyPromptHardeningToSystem(systemText, promptHardening)` into the `content` field before wrapping in the message array.
-
-### Provider gate
-
-`isAnthropicProvider(provider)` returns `true` only for `Provider.ANTHROPIC`. `anthropic-vertex` and Bedrock-hosted Anthropic flow through different provider strings (`vertex` / `bedrock`) and currently take the non-Anthropic branch — extend `isAnthropicProvider` if/when those become primary paths.
-
-### Verification
-
-- **Unit tests** (`ai-choose-rule.test.ts`) assert the request shape for both branches.
-- **Live verification** after deploy: Anthropic Console → https://console.anthropic.com/settings/usage → confirm `cache_read_input_tokens > 0` within 24h.
-- **No telemetry plumbing** in `saveAiUsage` — Anthropic Console is the source of truth for cache-hit metrics in v1.
+If volume ever becomes bursty (e.g. backlog triage processing many emails within a 5-min window), revisit — the **classifier** is the only path with a shared, reused prefix that could benefit, and it would need padding past 2048 tokens first.

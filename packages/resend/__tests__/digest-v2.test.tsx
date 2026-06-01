@@ -176,6 +176,13 @@ describe("DigestV2Email — Phase 10 sections", () => {
         href: "https://mail.google.com/mail/u/0/#inbox/abc",
       },
     ],
+    rescheduled: [
+      {
+        sentence:
+          "Looks like Dr. Jones checkup moved to Tue at 3:00p — added the new time, flagged the old event (from Orlando Health) →",
+        href: "https://calendar.google.com/event/resched",
+      },
+    ],
     added: [
       {
         sentence:
@@ -227,22 +234,29 @@ describe("DigestV2Email — Phase 10 sections", () => {
     expect(html).toContain("Nothing on the calendar tomorrow.");
   });
 
-  it("renders CalendarActivitySection with Review / Added / Confirmed sub-headings", async () => {
+  it("renders CalendarActivitySection with Review / Rescheduled / Added / Confirmed sub-headings", async () => {
     const html = await render(
       <DigestV2Email {...fixture} calendarActivity={calendarActivityFixture} />,
     );
     expect(html).toContain("Calendar Activity");
     expect(html).toContain("Review</p>");
+    expect(html).toContain("Rescheduled</p>");
     expect(html).toContain("Added</p>");
     expect(html).toContain("Confirmed</p>");
     expect(html).toContain("already on your calendar");
+    expect(html).toContain("added the new time, flagged the old event");
   });
 
-  it("hides CalendarActivitySection when all three groups are empty (D-12)", async () => {
+  it("hides CalendarActivitySection when all groups are empty (D-12)", async () => {
     const html = await render(
       <DigestV2Email
         {...fixture}
-        calendarActivity={{ review: [], added: [], confirmed: [] }}
+        calendarActivity={{
+          review: [],
+          rescheduled: [],
+          added: [],
+          confirmed: [],
+        }}
       />,
     );
     expect(html).not.toContain("Calendar Activity");
@@ -254,6 +268,7 @@ describe("DigestV2Email — Phase 10 sections", () => {
         {...fixture}
         calendarActivity={{
           review: [],
+          rescheduled: [],
           added: calendarActivityFixture.added,
           confirmed: [],
         }}
@@ -263,6 +278,7 @@ describe("DigestV2Email — Phase 10 sections", () => {
     expect(html).toContain("Added</p>");
     // Sub-headings for empty groups should not appear
     expect(html).not.toContain("Review</p>");
+    expect(html).not.toContain("Rescheduled</p>");
     expect(html).not.toContain("Confirmed</p>");
   });
 

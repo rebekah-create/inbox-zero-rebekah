@@ -126,7 +126,10 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
     });
   });
 
-  it("Anthropic + single-rule: passes system as SystemModelMessage[] with ephemeral cacheControl, prompt as string", async () => {
+  // Prompt caching was removed after the v1.1 audit (never engaged on Haiku —
+  // 2048-token floor vs ~1500-token prompt). system is now a plain string for
+  // every provider; no cacheControl anywhere. See v1.1-MILESTONE-AUDIT.md.
+  it("Anthropic + single-rule: passes system as a plain string, prompt as string, no cacheControl", async () => {
     getModelMock.mockImplementationOnce((_user: unknown, slot: string) => ({
       provider: "anthropic",
       modelName: "claude-haiku-4-5-20251001",
@@ -137,15 +140,11 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
 
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
     const callArg = generateObjectMock.mock.calls[0][0];
-    expect(Array.isArray(callArg.system)).toBe(true);
-    expect(callArg.system[0].role).toBe("system");
-    expect(typeof callArg.system[0].content).toBe("string");
-    expect(callArg.system[0].content.length).toBeGreaterThan(100);
-    expect(callArg.system[0].providerOptions).toEqual({
-      anthropic: { cacheControl: { type: "ephemeral" } },
-    });
+    expect(typeof callArg.system).toBe("string");
+    expect(callArg.system.length).toBeGreaterThan(100);
     expect(typeof callArg.prompt).toBe("string");
     expect(callArg.messages).toBeUndefined();
+    expect(JSON.stringify(callArg)).not.toContain("cacheControl");
   });
 
   it("non-Anthropic (openai) + single-rule: keeps system+prompt shape, no messages, no cacheControl anywhere", async () => {
@@ -166,7 +165,7 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
     expect(JSON.stringify(callArg)).not.toContain("cacheControl");
   });
 
-  it("Anthropic + multi-rule: passes system as SystemModelMessage[] with ephemeral cacheControl", async () => {
+  it("Anthropic + multi-rule: passes system as a plain string, no cacheControl", async () => {
     getModelMock.mockImplementation((_user: unknown, slot: string) => ({
       provider: "anthropic",
       modelName:
@@ -188,13 +187,10 @@ describe("aiChooseRule — Anthropic prompt caching request shape (OPS-03)", () 
 
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
     const callArg = generateObjectMock.mock.calls[0][0];
-    expect(Array.isArray(callArg.system)).toBe(true);
-    expect(typeof callArg.system[0].content).toBe("string");
-    expect(callArg.system[0].providerOptions).toEqual({
-      anthropic: { cacheControl: { type: "ephemeral" } },
-    });
+    expect(typeof callArg.system).toBe("string");
     expect(typeof callArg.prompt).toBe("string");
     expect(callArg.messages).toBeUndefined();
+    expect(JSON.stringify(callArg)).not.toContain("cacheControl");
   });
 
   it("non-Anthropic (openai) + multi-rule: keeps system+prompt shape, no cacheControl", async () => {

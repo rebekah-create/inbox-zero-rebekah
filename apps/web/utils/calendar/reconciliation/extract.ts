@@ -95,7 +95,7 @@ export async function extractCandidateEvent({
   });
 
   const tz = emailAccount.timezone ?? "America/New_York";
-  const system = buildExtractionSystem(modelOptions.provider, tz);
+  const system = buildExtractionSystem(tz);
 
   const prompt = `Sender: ${email.from}
 Subject: ${email.subject}
