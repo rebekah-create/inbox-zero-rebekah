@@ -55,7 +55,7 @@
 
 - [ ] **OPS-01** — Calendar API failures (rate limit, expired token, network) degrade gracefully — extraction skips, reconciliation skips, digest ships without agenda section, errors are logged with enough detail to debug
 - [ ] **OPS-02** — Token cost of the new extraction and reconciliation steps is measured and total AI spend stays within the existing AI budget (≤$10/mo additional total); if measurement shows otherwise, the pre-filter (REC-01) tightens or extraction payload trims before milestone close
-- [ ] **OPS-03** — Anthropic prompt caching is enabled on the constant-prefix portion of the v1.0 Haiku classification prompt (system prompt, categories, user-info block, rules list), the Anthropic Console shows non-zero `cache_read_input_tokens` within 24h of deploy, and the cut point is documented so Phase 9's extraction prompt inherits the pattern
+- [~] **OPS-03** — ~~Anthropic prompt caching is enabled on the constant-prefix portion of the v1.0 Haiku classification prompt...~~ **DESCOPED (not viable at single-user volume — v1.1 audit 2026-06-01).** Caching was implemented but never engaged: the cacheable minimum is 2048 tokens for Haiku (the tier every cached call uses) vs ~1500-token prompts, and at ~1 email/17min vs a 5-min cache TTL the cost/benefit is marginal-to-negative. `cache_control` removed; `system` is now a plain string. Full analysis in `v1.1-MILESTONE-AUDIT.md`; retrospective in `apps/web/utils/ai/choose-rule/NOTES.md`.
 
 ---
 
