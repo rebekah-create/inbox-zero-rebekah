@@ -10,7 +10,9 @@ minimumReleaseAgeExclude:
 
 # Dependency pins. Mirrors upstream elie222/inbox-zero's pnpm-workspace.yaml overrides
 # (vetted versions that force transitive deps onto patched/compatible releases), plus
-# lodash-es (our addition — upstream doesn't pin it yet; clears a prototype-pollution alert).
+# a few of our own (marked below) for high-severity advisories that reach the prod
+# runtime. Build-only / unused-feature advisories (minimatch, rollup, samlify, etc.)
+# are intentionally NOT pinned — see the open Dependabot alerts for rationale.
 overrides:
   "@hono/node-server": "1.19.14"
   "@tiptap/core": "2.27.2"
@@ -18,14 +20,18 @@ overrides:
   "@types/react-dom": "19.2.3"
   "@xmldom/xmldom": "0.8.13"
   axios: "1.16.1"
+  fast-uri: "3.1.2"          # ours: path-traversal/host-confusion (via ajv → MCP SDK / prisma)
   fast-xml-parser: "5.8.0"
   js-yaml: "3.14.2"
   jws: "4.0.1"
+  kysely: "0.28.17"          # ours: JSON-path injection (via better-auth)
   lodash: "4.18.1"
   lodash-es: "4.18.1"
   next: "16.2.6"
   postcss: "8.5.14"
+  protobufjs: "7.5.6"        # ours: proto-pollution / code-gen (via posthog + google-genai telemetry)
   svelte: "5.55.5"
+  underscore: "1.13.8"       # ours: DoS in _.flatten/_.isEqual (via mammoth docx parsing)
   webpack: "5.106.2"
 
 # pnpm 10 blocks install scripts by default. Only packages listed here may run them.
