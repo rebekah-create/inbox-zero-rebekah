@@ -8,6 +8,26 @@ minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
 - "@inboxzero/*"
 
+# Dependency pins. Mirrors upstream elie222/inbox-zero's pnpm-workspace.yaml overrides
+# (vetted versions that force transitive deps onto patched/compatible releases), plus
+# lodash-es (our addition — upstream doesn't pin it yet; clears a prototype-pollution alert).
+overrides:
+  "@hono/node-server": "1.19.14"
+  "@tiptap/core": "2.27.2"
+  "@types/react": "19.2.14"
+  "@types/react-dom": "19.2.3"
+  "@xmldom/xmldom": "0.8.13"
+  axios: "1.16.1"
+  fast-xml-parser: "5.8.0"
+  js-yaml: "3.14.2"
+  jws: "4.0.1"
+  lodash: "4.18.1"
+  lodash-es: "4.18.1"
+  next: "16.2.6"
+  postcss: "8.5.14"
+  svelte: "5.55.5"
+  webpack: "5.106.2"
+
 # pnpm 10 blocks install scripts by default. Only packages listed here may run them.
 onlyBuiltDependencies:
 - "@prisma/engines"
