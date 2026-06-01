@@ -949,6 +949,29 @@ function normalizeEmailDisplayNameHeaderForRuleMatching(header: string) {
     .join(", ");
 }
 
+// Escape regex metacharacters, then turn the `*` glob into `.*`.
+function globToRegexSource(pattern: string) {
+  return pattern.replace(/[.+?^${}()[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+}
+
+// Anchored regex for from/to address patterns, so a pattern matches a whole
+// address boundary and cannot be satisfied by a spoofed prefix/suffix (e.g. a
+// rule for `boss@company.com` must not match `boss@company.com.evil.com` or
+// `xboss@company.com`, and `example.com` must not match `myexample.com`).
+function createAnchoredAddressRegex(pattern: string) {
+  // `@domain` → any local part, exact domain (no subdomain), e.g. user@domain.
+  if (pattern.startsWith("@")) {
+    return new RegExp(`^.*${globToRegexSource(pattern)}$`);
+  }
+  // `local@domain` → exact address (local part may contain `*` wildcards).
+  if (pattern.includes("@")) {
+    return new RegExp(`^${globToRegexSource(pattern)}$`);
+  }
+  // Bare domain → addresses at that domain or a subdomain (`@domain`/`.domain`),
+  // but not a lookalike domain (e.g. `example.com` must not match myexample.com).
+  return new RegExp(`^.*[@.]${globToRegexSource(pattern)}$`);
+}
+
 function matchesEmailFieldPattern({
   pattern,
   addressText,
@@ -965,13 +988,15 @@ function matchesEmailFieldPattern({
 
     for (const patternPart of patterns) {
       const normalizedPattern = patternPart.trim().toLowerCase();
-      const regexPattern = normalizedPattern
-        .replace(/[.+?^${}()[\]\\]/g, "\\$&")
-        .replace(/\*/g, ".*");
-      const regex = new RegExp(regexPattern);
+      const regex = new RegExp(globToRegexSource(normalizedPattern));
 
       if (isAddressLikeEmailPattern(patternPart)) {
-        if (regex.test(addressText)) return true;
+        // `addressText` may hold several recipients joined as "a@x, b@y"; the
+        // anchored regex must be tested against each address individually.
+        const addressRegex = createAnchoredAddressRegex(normalizedPattern);
+        const addresses = addressText.split(", ").filter(Boolean);
+        if (addresses.some((address) => addressRegex.test(address)))
+          return true;
         continue;
       }
 
