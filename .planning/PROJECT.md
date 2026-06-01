@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A single-tenant AI email management system built on a self-hosted fork of Inbox Zero, running on AWS EC2. It automatically sorts every incoming email into one of 8 categories using a three-tier processing pipeline (rules → Haiku → Claude Sonnet), keeps only urgent and uncertain items in the Gmail inbox, and delivers a 6-7am daily digest. The system learns from feedback and gets better at understanding what Rebekah actually needs over time.
+A single-tenant AI email management system built on a self-hosted fork of Inbox Zero, running on AWS EC2. It automatically sorts every incoming email into one of 8 categories using a three-tier processing pipeline (rules → Haiku → Claude Sonnet), keeps only urgent and uncertain items in the Gmail inbox, and delivers a 9am ET daily digest. As of v1.1 it also reconciles schedulable email against the user's Google Calendar — matching existing events, creating new ones, and flagging overlaps/reschedules — and leads the digest with today's and tomorrow-morning's agenda. The system learns from feedback and gets better at understanding what Rebekah actually needs over time.
 
 ## Core Value
 
@@ -12,21 +12,9 @@ On a normal Tuesday morning, Rebekah opens her inbox and only sees things that n
 
 **Shipped: v1.0 — 2026-05-17.** Three-tier classification pipeline (rules → Haiku → Sonnet) + 9am ET daily digest with Sonnet narrative running in production. The inbox now only contains Urgent and Uncertain items; everything else is auto-filed and surfaced in the morning digest. AI cost holds at ~$10/mo. Live classification accuracy has been high enough that planned feedback/UI/backlog phases (5, 6, 7) were closed as already-satisfied rather than built — see `milestones/v1.0-ROADMAP.md`.
 
-## Current Milestone: v1.1 Calendar-Aware Email
+**Shipped: v1.1 Calendar-Aware Email — 2026-06-01.** Email is now reconciled against the user's Google Calendar: a cached read path feeds Haiku extraction, which matches/creates/flags events (`MATCHED` / `CREATED` / `AMBIGUOUS`), with time-interval overlap arbitration (v2) adding a non-destructive `RESCHEDULE` outcome. The 9am ET digest leads with today + tomorrow-morning agenda and renders a one-line outcome per reconciliation. The framing landed as **reconcile-not-classify** — the calendar is the thing being reconciled against, not an urgency-relevance filter for incoming mail (the original "calendar-aware classification" target was superseded during planning). The milestone audit caught + closed two gaps at sign-off (RESCHEDULE digest surfacing; OPS-03 prompt caching descoped as non-viable on the Haiku tier). See `milestones/v1.1-ROADMAP.md` and `milestones/v1.1-MILESTONE-AUDIT.md`.
 
-**Goal:** Make the AI email pipeline calendar-aware so upcoming events inform classification, schedulable emails become calendar events automatically, and the daily digest leads with today's agenda.
-
-**Target features:**
-- Email → Calendar awareness in classification (upcoming events as Haiku/Sonnet context for urgency)
-- Auto-create events from emails (ICS invites + AI-detected appointments → Google Calendar)
-- Digest enrichment (today's + tomorrow's agenda at the top of the 9am ET digest)
-
-**Key context:**
-- Google Calendar OAuth already connected for rebekah@trueocean.com (per user 2026-05-17)
-- Foundation exists: `CalendarConnection`/`Calendar` Prisma models, upstream `/api/google/calendar` routes, `.ics` parser at `utils/parse/calender-event.ts`, `utils/meeting-briefs/` scaffolding (currently Slack-targeted)
-- Auto-create policy: always auto-create — trust AI, user deletes if wrong (Gmail-style correction loop)
-- AI cost cap unchanged: ≤$10/mo additional total. Calendar context rides Haiku tier where possible
-- Carried-forward deferred items from v1.0 (CLASS-09, FEEDBACK-06, LEARN/DEAL/MON) remain in `ROADMAP.md` Backlog
+**No active milestone.** Next milestone starts with `/gsd-new-milestone` (see `ROADMAP.md` Backlog for candidates).
 
 ## Requirements
 
@@ -52,9 +40,17 @@ On a normal Tuesday morning, Rebekah opens her inbox and only sees things that n
 - [x] Signups locked to rebekah@trueocean.com only
 - [x] GitHub Actions CI/CD for ghcr.io/rebekah-create/inbox-zero-rebekah
 
+### Shipped in v1.1
+
+- [x] Single cached read path for next-7-day primary-calendar events; declined/tentative excluded; stale-fallback degradation (CAL-01..03)
+- [x] Email → calendar reconciliation: pre-filter → Haiku extract (+ `.ics`) → MATCHED / CREATED / AMBIGUOUS; idempotent; `[AI]`-tagged events with Gmail back-ref; failure-isolated (REC-01..06, EVT-01..05, OPS-01)
+- [x] Time-overlap arbitration (v2) replacing title-Dice matching; four-outcome Haiku arbiter; non-destructive RESCHEDULE
+- [x] Daily digest leads with today + tomorrow-morning agenda; one-line outcome per reconciliation incl. Rescheduled (DIG-01..05)
+- [~] AI cost measured ≤ $10/mo (OPS-02 — eval committed, validated on CI); **OPS-03 prompt caching descoped** — never engaged on the Haiku tier (2048-token floor vs ~1500-token prompts); see `milestones/v1.1-MILESTONE-AUDIT.md`
+
 ### Active
 
-See `.planning/REQUIREMENTS.md` for milestone v1.1 requirements (categories: CTX, EVT, DIG, OPS).
+No active milestone. Requirements for the next milestone are defined via `/gsd-new-milestone`. See `ROADMAP.md` Backlog for candidates.
 
 ### Dropped or Deferred
 
@@ -102,11 +98,15 @@ See `.planning/REQUIREMENTS.md` for milestone v1.1 requirements (categories: CTX
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Three-tier AI: rules → Haiku → Sonnet | Keep AI cost under $10/mo while maintaining quality | — Pending |
-| Recon phase before building | Don't invest in Inbox Zero's app layer until we know what it actually does | — Pending |
-| Single-tenant design | Only one user — avoid multi-tenant complexity | — Pending |
-| Keep existing infra stack | EC2, Postgres, Docker all working — don't touch what works | — Pending |
-| Planning files in inbox-zero-rebekah repo | Planning agents need to read the code | — Pending |
+| Three-tier AI: rules → Haiku → Sonnet | Keep AI cost under $10/mo while maintaining quality | ✓ Good — held at ~$10/mo through v1.1 |
+| Recon phase before building | Don't invest in Inbox Zero's app layer until we know what it actually does | ✓ Good — v1.0 + v1.1 both built on the mapped architecture |
+| Single-tenant design | Only one user — avoid multi-tenant complexity | ✓ Good |
+| Keep existing infra stack | EC2, Postgres, Docker all working — don't touch what works | ✓ Good |
+| Planning files in inbox-zero-rebekah repo | Planning agents need to read the code | ✓ Good |
+| Reconcile-not-classify for calendar (v1.1) | The calendar is the thing reconciled against, not an urgency filter; matches the personal-logistics use case (1–3 events/day) | ✓ Good — replaced the original "calendar-aware classification" framing |
+| Always auto-create events, user deletes if wrong (v1.1) | Gmail-style correction loop; trust AI, low cost of a wrong event | ✓ Good |
+| Time-interval overlap + Haiku arbitration over title-Dice (v1.1 Phase 11) | Token-Dice produced false-positive AMBIGUOUS on shared generic words ("Class"); time overlap + semantic arbitration is correct | ✓ Good |
+| Drop Anthropic prompt caching (v1.1, OPS-03) | Never engaged — 2048-token Haiku floor vs ~1500-token prompts; marginal/negative at single-user volume | ✓ Good — removed inert code, descoped requirement |
 
 ## Evolution
 
@@ -126,4 +126,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-17 — milestone v1.1 (Calendar-Aware Email) started*
+*Last updated: 2026-06-01 — after v1.1 (Calendar-Aware Email) milestone shipped*
