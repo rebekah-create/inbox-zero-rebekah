@@ -157,7 +157,9 @@ Sonnet's existing narrative is extended to be agenda-aware (it sees the agenda +
 </deferred_ideas>
 
 <open_questions_for_planner>
-## Open Questions for plan-phase (NOT user-facing)
+## Planner Questions — RESOLVED during plan-phase + execution
+
+**Resolved 2026-06-01 (Phase 10 shipped + verified; cleared at v1.1 milestone close).** These were planner-input questions, all answered when Phase 10 was planned and executed. The Sonnet token-delta (Q3) and Gmail pill rendering (Q6) human-verification items were satisfied by the user's calendar-integration testing. Retained below as historical record.
 
 1. **Where exactly did Phase 4 land the digest send pipeline + Sonnet narrative builder?** Phase 4 CONTEXT noted "rewrite-in-place vs new route" was a plan-phase decision. Confirm the current file layout before deciding where to wire the new data fetches.
 2. **Marketing/Calendar rule interaction.** Phase 9 D-09 added a `Calendar` classifier rule. Does its DIGEST action (if any) produce DigestItem rows that would double-count in the digest (once as a DigestItem under Notifications/Marketing, once as a Calendar Activity row)? Likely no — Calendar-labeled emails skip the DIGEST action by design — but verify.

@@ -105,9 +105,11 @@ Every morning at 9:00 AM Eastern, Rebekah receives a single email summarizing wh
 </files_of_interest>
 
 <open_questions_for_planner>
-## Open Questions for plan-phase (NOT user-facing)
+## Planner Questions — RESOLVED during plan-phase + execution
 
-These are engineering/integration questions that should be researched and answered during `/gsd-plan-phase 4`, not surfaced to the user as gray areas:
+**Resolved 2026-06-01 (v1.0 shipped; cleared at v1.1 milestone close).** These were planner-input questions, all answered when Phase 4 was planned and executed and the daily digest shipped to production. Retained below as historical record of the plan-phase inputs.
+
+These were engineering/integration questions researched and answered during `/gsd-plan-phase 4`, not surfaced to the user as gray areas:
 
 1. **What scheduler runs the cron?** BullMQ recurring job, Vercel cron (vercel.json), Upstash QStash, or system cron on EC2? Each has different timezone semantics. Inspect existing `/api/cron/automation-jobs` and `/api/cron/scheduled-actions` to see the pattern.
 2. **Marketing rule DIGEST action.** Phase 3 D-05 has Marketing as LABEL + ARCHIVE only (no DIGEST). But Phase 4 needs Marketing in the digest (auto-filed roll-up). Plan-phase must either add DIGEST to the Marketing rule, route Marketing emails through a different DigestItem creation path, or update the Phase 4 query to include Marketing-labeled emails by label rather than via DIGEST action. Probably the first.
