@@ -294,7 +294,9 @@ describe("arbitrateOverlap", () => {
     );
   });
 
-  it("passes the Anthropic cacheControl system block when provider is anthropic", async () => {
+  // Prompt caching was removed after the v1.1 audit (never engaged on Haiku).
+  // system is now a plain string for every provider; no cacheControl.
+  it("passes system as a plain string with no cacheControl when provider is anthropic", async () => {
     mockGenerateObject.mockResolvedValueOnce({
       object: { verdict: "SKIP", matchedEventId: null },
     });
@@ -308,12 +310,8 @@ describe("arbitrateOverlap", () => {
     });
 
     const call = mockGenerateObject.mock.calls[0][0];
-    expect(Array.isArray(call.system)).toBe(true);
-    const systemMsg = call.system[0];
-    expect(systemMsg.role).toBe("system");
-    expect(systemMsg.providerOptions?.anthropic?.cacheControl?.type).toBe(
-      "ephemeral",
-    );
+    expect(typeof call.system).toBe("string");
+    expect(JSON.stringify(call)).not.toContain("cacheControl");
   });
 
   it("falls back to a plain string system when provider is NOT anthropic", async () => {

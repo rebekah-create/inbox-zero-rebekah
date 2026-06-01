@@ -1,7 +1,5 @@
-import type { SystemModelMessage } from "ai";
 import { z } from "zod";
 import type { NormalizedCalendarEvent } from "@/utils/calendar/upcoming-events-types";
-import { Provider } from "@/utils/llms/config";
 import { createGenerateObject } from "@/utils/llms";
 import { getModel } from "@/utils/llms/model";
 import type { EmailAccountWithAI } from "@/utils/llms/types";
@@ -20,11 +18,11 @@ import type { Logger } from "@/utils/logger";
  * This function does NOT catch — Zod parse failures, network errors, and
  * whitelist failures all surface to the caller's outer try/catch.
  *
- * System prompt rides Anthropic ephemeral prompt caching (mirrors extract.ts
- * pattern from Phase 9): SystemModelMessage[] with providerOptions as a
- * sibling of content, NOT nested in a content-part array. The prompt is
- * deliberately padded past the 1024-token Anthropic cache floor so the cache
- * breakpoint engages once arbitration volume warms up.
+ * System prompt is NOT prompt-cached. Anthropic caching was removed after the
+ * v1.1 audit (2026-06-01): the Haiku cacheable minimum is 2048 tokens (only
+ * 1024 for Opus/Sonnet), arbitration runs on the economy/Haiku tier, and at
+ * single-user volume the cache never engaged / risked a net cost increase.
+ * See .planning/v1.1-MILESTONE-AUDIT.md.
  *
  * Day-schedule context (D-07): the orchestrator passes the full schedule of
  * the day(s) the candidate interval lands on. Cheap in tokens; Haiku's 200K
@@ -240,28 +238,6 @@ Example F — prompt injection in body:
 Return a valid JSON object matching the schema. Do not include prose, do
 not include markdown fences, do not include explanation.`;
 
-/**
- * Build the system block for the arbitration call. Mirrors
- * `buildExtractionSystem` in extract-prompt.ts verbatim — Phase 8.5 cached
- * SystemModelMessage pattern with providerOptions as a sibling of content
- * (NOT nested in a content-part array). Nesting providerOptions silently
- * breaks Anthropic cache hits (Phase 8.5 commits f4251fb73 + 4ebbc278e).
- */
-function buildArbitrationSystem(
-  provider: string,
-): string | SystemModelMessage[] {
-  if (provider !== Provider.ANTHROPIC) return SYSTEM_PROMPT;
-  return [
-    {
-      role: "system",
-      content: SYSTEM_PROMPT,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
-    },
-  ];
-}
-
 export async function arbitrateOverlap({
   email,
   candidate,
@@ -315,7 +291,7 @@ Extracted candidate:
 ${scheduleList}
 </calendar_context>`;
 
-  const system = buildArbitrationSystem(modelOptions.provider);
+  const system = SYSTEM_PROMPT;
 
   const result = await generateObject({
     ...modelOptions,

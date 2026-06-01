@@ -228,12 +228,12 @@ describe("extractCandidateEvent", () => {
       logger: makeMockLogger(),
     });
     const call = mockGenerateObject.mock.calls[0][0];
-    // System on anthropic provider is a SystemModelMessage[]
-    const systemMsg = Array.isArray(call.system) ? call.system[0] : null;
-    expect(systemMsg?.content).toContain("America/New_York");
+    // System is a plain string (prompt caching removed — see v1.1 audit).
+    expect(typeof call.system).toBe("string");
+    expect(call.system).toContain("America/New_York");
   });
 
-  it("returns SystemModelMessage[] with cacheControl when provider is anthropic", async () => {
+  it("passes system as a plain string with no cacheControl (caching removed)", async () => {
     setupModel("anthropic");
     await extractCandidateEvent({
       email,
@@ -241,12 +241,8 @@ describe("extractCandidateEvent", () => {
       logger: makeMockLogger(),
     });
     const call = mockGenerateObject.mock.calls[0][0];
-    expect(Array.isArray(call.system)).toBe(true);
-    const systemMsg = call.system[0];
-    expect(systemMsg.role).toBe("system");
-    expect(systemMsg.providerOptions?.anthropic?.cacheControl?.type).toBe(
-      "ephemeral",
-    );
+    expect(typeof call.system).toBe("string");
+    expect(JSON.stringify(call)).not.toContain("cacheControl");
   });
 
   it("clamps confidence > 1 down to 1", async () => {

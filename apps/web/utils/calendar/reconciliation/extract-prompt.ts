@@ -1,18 +1,16 @@
-import type { SystemModelMessage } from "ai";
-import { Provider } from "@/utils/llms/config";
-
 /**
- * Cached system prompt for Phase 9 reconciliation Haiku extraction.
+ * System prompt for Phase 9 reconciliation Haiku extraction.
  *
  * The literal `{{TZ}}` placeholder is replaced at call time by
- * `buildExtractionSystem`. The full string MUST exceed 1024 tokens for the
- * Anthropic ephemeral cache to engage (AI-SPEC §3 pitfall #2). The draft below
- * is ~1500 tokens — well above the floor. Padding with explicit field-by-field
- * rules and worked examples is cheap once cached.
+ * `buildExtractionSystem`.
  *
- * Treat changes here as a migration: any edit invalidates the Anthropic cache
- * for ~5 minutes, so the next batch of emails pays full input price. Make edits
- * deliberately (RESEARCH §8a).
+ * NOTE: This prompt is NOT prompt-cached. Anthropic prompt caching was removed
+ * after the v1.1 audit (2026-06-01) found it never engaged: the cacheable
+ * minimum is 2048 tokens for Haiku (only 1024 for Opus/Sonnet), this prompt is
+ * ~1500 tokens, and every reconciliation call runs on the economy/Haiku tier.
+ * At single-user volume (~1 email per 17 min vs a 5-min cache TTL) caching gave
+ * no benefit and risked a net cost increase from cache-write premiums. See
+ * .planning/v1.1-MILESTONE-AUDIT.md.
  */
 export const SYSTEM_PROMPT_TEMPLATE = `You are an information-extraction system. Your sole job is to read an inbound email
 and return a single structured JSON object describing the event (if any) the email
@@ -138,28 +136,9 @@ Return a valid JSON object matching the schema. Do not include any prose, do not
 include markdown fences, do not include explanation.`;
 
 /**
- * Build the system block for the Haiku extraction call. Mirrors
- * `buildClassifierSystem` from `ai-choose-rule.ts:452-466` verbatim — the
- * Phase 8.5 cached-system-message pattern with `providerOptions` as a sibling
- * of `content` on the SystemModelMessage object (NOT nested inside a
- * content-part array). Regressing to nested providerOptions silently breaks
- * Anthropic cache hits (commits f4251fb73 + 4ebbc278e).
- *
- * Substitutes the `{{TZ}}` placeholder with the user's resolved timezone.
+ * Build the system prompt for the Haiku extraction call by substituting the
+ * `{{TZ}}` placeholder with the user's resolved timezone.
  */
-export function buildExtractionSystem(
-  provider: string,
-  tz: string,
-): string | SystemModelMessage[] {
-  const text = SYSTEM_PROMPT_TEMPLATE.replace(/\{\{TZ\}\}/g, tz);
-  if (provider !== Provider.ANTHROPIC) return text;
-  return [
-    {
-      role: "system",
-      content: text,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
-    },
-  ];
+export function buildExtractionSystem(tz: string): string {
+  return SYSTEM_PROMPT_TEMPLATE.replace(/\{\{TZ\}\}/g, tz);
 }

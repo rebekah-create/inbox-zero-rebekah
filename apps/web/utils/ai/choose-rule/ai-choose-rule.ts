@@ -1,11 +1,9 @@
-import type { SystemModelMessage } from "ai";
 import { z } from "zod";
 import type { EmailAccountWithAI } from "@/utils/llms/types";
 import { stringifyEmail } from "@/utils/stringify-email";
 import { isDefined, type EmailForLLM } from "@/utils/types";
 import { getModel, type ModelType } from "@/utils/llms/model";
 import { createGenerateObject } from "@/utils/llms";
-import { Provider } from "@/utils/llms/config";
 import { getUserInfoPrompt, getUserRulesPrompt } from "@/utils/ai/helpers";
 import { sortRulesForAutomation } from "@/utils/rule/sort";
 import type { Logger } from "@/utils/logger";
@@ -224,7 +222,7 @@ ${stringifyEmail(email, 500)}
 
   const aiResponse = await generateObject({
     ...modelOptions,
-    system: buildClassifierSystem(system, modelOptions.provider),
+    system,
     prompt,
     schema: singleRuleSchema,
   });
@@ -345,7 +343,7 @@ ${stringifyEmail(email, 500)}
 
   const aiResponse = await generateObject({
     ...modelOptions,
-    system: buildClassifierSystem(system, modelOptions.provider),
+    system,
     prompt,
     schema: multiRuleSchema,
   });
@@ -443,24 +441,4 @@ User has manually classified emails from this sender into these rules:
 ${lines.join("\n")}
 These are hints from past user actions. Still evaluate the current email on its own merits.
 </classification_feedback>`;
-}
-
-function isAnthropicProvider(provider: string): boolean {
-  return provider === Provider.ANTHROPIC;
-}
-
-function buildClassifierSystem(
-  systemText: string,
-  provider: string,
-): string | SystemModelMessage[] {
-  if (!isAnthropicProvider(provider)) return systemText;
-  return [
-    {
-      role: "system",
-      content: systemText,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
-    },
-  ];
 }
