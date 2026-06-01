@@ -78,6 +78,7 @@ export type CalendarActivityRow = {
 
 export type CalendarActivityBlock = {
   review: CalendarActivityRow[]; // AMBIGUOUS (D-11)
+  rescheduled: CalendarActivityRow[]; // RESCHEDULE (Phase 11)
   added: CalendarActivityRow[]; // CREATED (D-11)
   confirmed: CalendarActivityRow[]; // MATCHED (D-11)
 };
@@ -312,6 +313,10 @@ function CalendarActivitySection({ block }: { block: CalendarActivityBlock }) {
       </Text>
       <Section className="border-0 border-l-[4px] border-l-teal-400 border-solid bg-teal-50 rounded-[3px] py-[14px] px-[16px] pb-[10px]">
         <CalendarActivitySubGroup heading="Review" rows={block.review} />
+        <CalendarActivitySubGroup
+          heading="Rescheduled"
+          rows={block.rescheduled}
+        />
         <CalendarActivitySubGroup heading="Added" rows={block.added} />
         <CalendarActivitySubGroup heading="Confirmed" rows={block.confirmed} />
       </Section>
@@ -336,6 +341,7 @@ export default function DigestV2Email({
   const showCalendarActivity =
     !!calendarActivity &&
     (calendarActivity.review.length > 0 ||
+      calendarActivity.rescheduled.length > 0 ||
       calendarActivity.added.length > 0 ||
       calendarActivity.confirmed.length > 0);
 
@@ -548,6 +554,13 @@ DigestV2Email.PreviewProps = {
         sentence:
           "REI: looks like it's about Camping reservation rescheduled — review →",
         href: "https://mail.google.com/mail/u/0/#inbox/abc123",
+      },
+    ],
+    rescheduled: [
+      {
+        sentence:
+          "Looks like Dr. Jones checkup moved to Tue at 3:00p — added the new time, flagged the old event (from Orlando Health) →",
+        href: "https://calendar.google.com/event/resched123",
       },
     ],
     added: [

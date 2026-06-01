@@ -12,9 +12,10 @@ import type {
  * Composes Plan 10-02's pure helpers (renderSentence + pickLinkTarget) into the
  * CalendarActivityBlock that the React Email digest template (Plan 10-04) renders.
  *
- *  - Records with outcome === "AMBIGUOUS" -> `review`.
- *  - Records with outcome === "CREATED"   -> `added`.
- *  - Records with outcome === "MATCHED"   -> `confirmed`.
+ *  - Records with outcome === "AMBIGUOUS"  -> `review`.
+ *  - Records with outcome === "RESCHEDULE" -> `rescheduled` (Phase 11).
+ *  - Records with outcome === "CREATED"    -> `added`.
+ *  - Records with outcome === "MATCHED"    -> `confirmed`.
  *  - Records with outcome "FAILED" or "PENDING" are silently excluded (D-16) —
  *    those are internal/operational states and never appear in the digest body.
  *  - Within each group: ascending by extractedStart (D-14).
@@ -53,7 +54,12 @@ export interface ReconciliationInput {
   threadId: string;
 }
 
-const SURFACE_OUTCOMES = new Set<string>(["MATCHED", "CREATED", "AMBIGUOUS"]);
+const SURFACE_OUTCOMES = new Set<string>([
+  "MATCHED",
+  "CREATED",
+  "AMBIGUOUS",
+  "RESCHEDULE",
+]);
 
 export function buildCalendarActivity({
   records,
@@ -67,10 +73,12 @@ export function buildCalendarActivity({
 
   // Group by outcome.
   const review: ReconciliationInput[] = [];
+  const rescheduled: ReconciliationInput[] = [];
   const added: ReconciliationInput[] = [];
   const confirmed: ReconciliationInput[] = [];
   for (const r of surfaced) {
     if (r.outcome === "AMBIGUOUS") review.push(r);
+    else if (r.outcome === "RESCHEDULE") rescheduled.push(r);
     else if (r.outcome === "CREATED") added.push(r);
     else if (r.outcome === "MATCHED") confirmed.push(r);
   }
@@ -79,6 +87,7 @@ export function buildCalendarActivity({
   const byStartAsc = (a: ReconciliationInput, b: ReconciliationInput): number =>
     a.extractedStart.getTime() - b.extractedStart.getTime();
   review.sort(byStartAsc);
+  rescheduled.sort(byStartAsc);
   added.sort(byStartAsc);
   confirmed.sort(byStartAsc);
 
@@ -101,12 +110,14 @@ export function buildCalendarActivity({
   };
 
   const reviewRows = review.map(toRow);
+  const rescheduledRows = rescheduled.map(toRow);
   const addedRows = added.map(toRow);
   const confirmedRows = confirmed.map(toRow);
 
-  // D-12: hide the whole section when all three groups are empty.
+  // D-12: hide the whole section when all groups are empty.
   if (
     reviewRows.length === 0 &&
+    rescheduledRows.length === 0 &&
     addedRows.length === 0 &&
     confirmedRows.length === 0
   ) {
@@ -115,6 +126,7 @@ export function buildCalendarActivity({
 
   return {
     review: reviewRows,
+    rescheduled: rescheduledRows,
     added: addedRows,
     confirmed: confirmedRows,
   };

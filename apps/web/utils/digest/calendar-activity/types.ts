@@ -5,14 +5,23 @@
  * `CalendarActivitySection` sub-component (Plan 04). All values are pre-rendered
  * primitives (string sentence + string href) so the render layer stays dumb.
  *
- * D-16: only MATCHED / CREATED / AMBIGUOUS are surfaced. FAILED and PENDING are
- * intentionally excluded from this type alias so the type system enforces the
- * digest contract — those outcomes are internal/operational state only.
+ * D-16: only MATCHED / CREATED / AMBIGUOUS / RESCHEDULE are surfaced. FAILED and
+ * PENDING are intentionally excluded from this type alias so the type system
+ * enforces the digest contract — those outcomes are internal/operational state
+ * only.
+ *
+ * RESCHEDULE (Phase 11): the reconciler created a new event at the new time AND
+ * left a non-destructive note on the old event. It surfaces in its own
+ * `rescheduled` bucket and links to the new event like CREATED does.
  *
  * Pure type module — no runtime, no I/O.
  */
 
-export type CalendarActivityOutcome = "MATCHED" | "CREATED" | "AMBIGUOUS";
+export type CalendarActivityOutcome =
+  | "MATCHED"
+  | "CREATED"
+  | "AMBIGUOUS"
+  | "RESCHEDULE";
 
 export type CalendarActivityRow = {
   sentence: string;
@@ -21,6 +30,7 @@ export type CalendarActivityRow = {
 
 export type CalendarActivityBlock = {
   review: CalendarActivityRow[]; // AMBIGUOUS (D-11)
+  rescheduled: CalendarActivityRow[]; // RESCHEDULE (Phase 11)
   added: CalendarActivityRow[]; // CREATED (D-11)
   confirmed: CalendarActivityRow[]; // MATCHED (D-11)
 };

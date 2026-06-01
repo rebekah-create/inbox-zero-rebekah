@@ -41,11 +41,12 @@ describe("buildCalendarActivity — D-12 empty handling", () => {
 });
 
 describe("buildCalendarActivity — D-11 grouping by outcome", () => {
-  it("routes AMBIGUOUS->review, CREATED->added, MATCHED->confirmed", () => {
+  it("routes AMBIGUOUS->review, RESCHEDULE->rescheduled, CREATED->added, MATCHED->confirmed", () => {
     const records = [
       rec({ id: "1", outcome: "AMBIGUOUS" }),
       rec({ id: "2", outcome: "CREATED" }),
       rec({ id: "3", outcome: "MATCHED" }),
+      rec({ id: "4", outcome: "RESCHEDULE" }),
     ];
     const block = buildCalendarActivity({
       records,
@@ -53,8 +54,31 @@ describe("buildCalendarActivity — D-11 grouping by outcome", () => {
     });
     expect(block).not.toBeNull();
     expect(block!.review).toHaveLength(1);
+    expect(block!.rescheduled).toHaveLength(1);
     expect(block!.added).toHaveLength(1);
     expect(block!.confirmed).toHaveLength(1);
+  });
+
+  it("RESCHEDULE row surfaces and links to the new Google event (Phase 11)", () => {
+    const records = [
+      rec({
+        id: "1",
+        outcome: "RESCHEDULE",
+        extractedTitle: "Dr. Jones checkup",
+        googleEventHtmlLink: "https://calendar.google.com/event?eid=new",
+        messageId: "msg-r",
+      }),
+    ];
+    const block = buildCalendarActivity({
+      records,
+      senderMap: new Map([["msg-r", "Orlando Health"]]),
+    });
+    expect(block!.rescheduled).toHaveLength(1);
+    const row = block!.rescheduled[0]!;
+    expect(row.sentence).toContain("Looks like Dr. Jones checkup moved to");
+    expect(row.sentence).toContain("added the new time, flagged the old event");
+    // RESCHEDULE deep-links into the newly-created event, like CREATED.
+    expect(row.href).toBe("https://calendar.google.com/event?eid=new");
   });
 });
 
