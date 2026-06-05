@@ -79,8 +79,6 @@ export type CalendarActivityRow = {
 export type CalendarActivityBlock = {
   review: CalendarActivityRow[]; // AMBIGUOUS (D-11)
   rescheduled: CalendarActivityRow[]; // RESCHEDULE (Phase 11)
-  added: CalendarActivityRow[]; // CREATED (D-11)
-  confirmed: CalendarActivityRow[]; // MATCHED (D-11)
 };
 
 // ---------------------------------------------------------------------------
@@ -317,8 +315,6 @@ function CalendarActivitySection({ block }: { block: CalendarActivityBlock }) {
           heading="Rescheduled"
           rows={block.rescheduled}
         />
-        <CalendarActivitySubGroup heading="Added" rows={block.added} />
-        <CalendarActivitySubGroup heading="Confirmed" rows={block.confirmed} />
       </Section>
     </Section>
   );
@@ -341,9 +337,7 @@ export default function DigestV2Email({
   const showCalendarActivity =
     !!calendarActivity &&
     (calendarActivity.review.length > 0 ||
-      calendarActivity.rescheduled.length > 0 ||
-      calendarActivity.added.length > 0 ||
-      calendarActivity.confirmed.length > 0);
+      calendarActivity.rescheduled.length > 0);
 
   return (
     <Html>
@@ -561,20 +555,6 @@ DigestV2Email.PreviewProps = {
         sentence:
           "Looks like Dr. Jones checkup moved to Tue at 3:00p — added the new time, flagged the old event (from Orlando Health) →",
         href: "https://calendar.google.com/event/resched123",
-      },
-    ],
-    added: [
-      {
-        sentence:
-          "Added Dentist Mon at 9:00a to your calendar (from Smile Dental) →",
-        href: "https://calendar.google.com/event/xyz456",
-      },
-    ],
-    confirmed: [
-      {
-        sentence:
-          "Orlando Health confirmed Dr. Jones visit — already on your calendar",
-        href: "https://calendar.google.com/event/qrs789",
       },
     ],
   },

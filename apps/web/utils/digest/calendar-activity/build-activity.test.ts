@@ -38,10 +38,21 @@ describe("buildCalendarActivity — D-12 empty handling", () => {
     });
     expect(block).toBeNull();
   });
+
+  it("returns null when only CREATED/MATCHED records exist (dropped as diagnostic clutter)", () => {
+    const block = buildCalendarActivity({
+      records: [
+        rec({ id: "1", outcome: "CREATED" }),
+        rec({ id: "2", outcome: "MATCHED" }),
+      ],
+      senderMap: new Map(),
+    });
+    expect(block).toBeNull();
+  });
 });
 
 describe("buildCalendarActivity — D-11 grouping by outcome", () => {
-  it("routes AMBIGUOUS->review, RESCHEDULE->rescheduled, CREATED->added, MATCHED->confirmed", () => {
+  it("routes AMBIGUOUS->review and RESCHEDULE->rescheduled; drops CREATED/MATCHED", () => {
     const records = [
       rec({ id: "1", outcome: "AMBIGUOUS" }),
       rec({ id: "2", outcome: "CREATED" }),
@@ -55,8 +66,6 @@ describe("buildCalendarActivity — D-11 grouping by outcome", () => {
     expect(block).not.toBeNull();
     expect(block!.review).toHaveLength(1);
     expect(block!.rescheduled).toHaveLength(1);
-    expect(block!.added).toHaveLength(1);
-    expect(block!.confirmed).toHaveLength(1);
   });
 
   it("RESCHEDULE row surfaces and links to the new Google event (Phase 11)", () => {
@@ -77,7 +86,7 @@ describe("buildCalendarActivity — D-11 grouping by outcome", () => {
     const row = block!.rescheduled[0]!;
     expect(row.sentence).toContain("Looks like Dr. Jones checkup moved to");
     expect(row.sentence).toContain("added the new time, flagged the old event");
-    // RESCHEDULE deep-links into the newly-created event, like CREATED.
+    // RESCHEDULE deep-links into the newly-created event.
     expect(row.href).toBe("https://calendar.google.com/event?eid=new");
   });
 });
@@ -85,7 +94,7 @@ describe("buildCalendarActivity — D-11 grouping by outcome", () => {
 describe("buildCalendarActivity — D-16 FAILED/PENDING exclusion", () => {
   it("drops FAILED records entirely; they appear in no group", () => {
     const records = [
-      rec({ id: "1", outcome: "MATCHED" }),
+      rec({ id: "1", outcome: "AMBIGUOUS" }),
       rec({ id: "2", outcome: "FAILED" }),
     ];
     const block = buildCalendarActivity({
@@ -93,14 +102,13 @@ describe("buildCalendarActivity — D-16 FAILED/PENDING exclusion", () => {
       senderMap: new Map(),
     });
     expect(block).not.toBeNull();
-    expect(block!.review).toHaveLength(0);
-    expect(block!.added).toHaveLength(0);
-    expect(block!.confirmed).toHaveLength(1);
+    expect(block!.review).toHaveLength(1);
+    expect(block!.rescheduled).toHaveLength(0);
   });
 
   it("drops PENDING records entirely; they appear in no group", () => {
     const records = [
-      rec({ id: "1", outcome: "CREATED" }),
+      rec({ id: "1", outcome: "RESCHEDULE" }),
       rec({ id: "2", outcome: "PENDING" }),
     ];
     const block = buildCalendarActivity({
@@ -108,24 +116,23 @@ describe("buildCalendarActivity — D-16 FAILED/PENDING exclusion", () => {
       senderMap: new Map(),
     });
     expect(block).not.toBeNull();
-    expect(block!.added).toHaveLength(1);
+    expect(block!.rescheduled).toHaveLength(1);
     expect(block!.review).toHaveLength(0);
-    expect(block!.confirmed).toHaveLength(0);
   });
 });
 
 describe("buildCalendarActivity — D-14 ordering within group", () => {
-  it("sorts two CREATED records ascending by extractedStart", () => {
+  it("sorts two AMBIGUOUS records ascending by extractedStart", () => {
     const records = [
       rec({
         id: "late",
-        outcome: "CREATED",
+        outcome: "AMBIGUOUS",
         extractedStart: new Date("2026-05-25T14:00:00Z"),
         extractedTitle: "Later event",
       }),
       rec({
         id: "early",
-        outcome: "CREATED",
+        outcome: "AMBIGUOUS",
         extractedStart: new Date("2026-05-21T14:00:00Z"),
         extractedTitle: "Earlier event",
       }),
@@ -135,30 +142,30 @@ describe("buildCalendarActivity — D-14 ordering within group", () => {
       senderMap: new Map(),
     });
     // Earlier extractedStart should render first; we assert via sentence content.
-    expect(block!.added[0]!.sentence).toContain("Earlier event");
-    expect(block!.added[1]!.sentence).toContain("Later event");
+    expect(block!.review[0]!.sentence).toContain("Earlier event");
+    expect(block!.review[1]!.sentence).toContain("Later event");
   });
 });
 
 describe("buildCalendarActivity — sender resolution", () => {
   it("uses senderMap display name when present", () => {
     const records = [
-      rec({ id: "1", outcome: "MATCHED", messageId: "msg-xyz" }),
+      rec({ id: "1", outcome: "AMBIGUOUS", messageId: "msg-xyz" }),
     ];
     const senderMap = new Map([["msg-xyz", "Dr. Smith"]]);
     const block = buildCalendarActivity({ records, senderMap });
-    expect(block!.confirmed[0]!.sentence.startsWith("Dr. Smith ")).toBe(true);
+    expect(block!.review[0]!.sentence.startsWith("Dr. Smith:")).toBe(true);
   });
 
   it("falls back to messageId string when senderMap misses", () => {
     const records = [
-      rec({ id: "1", outcome: "MATCHED", messageId: "msg-orphan" }),
+      rec({ id: "1", outcome: "AMBIGUOUS", messageId: "msg-orphan" }),
     ];
     const block = buildCalendarActivity({
       records,
       senderMap: new Map(),
     });
-    expect(block!.confirmed[0]!.sentence.startsWith("msg-orphan ")).toBe(true);
+    expect(block!.review[0]!.sentence.startsWith("msg-orphan:")).toBe(true);
   });
 });
 
@@ -167,7 +174,7 @@ describe("buildCalendarActivity — row shape", () => {
     const records = [
       rec({
         id: "1",
-        outcome: "CREATED",
+        outcome: "RESCHEDULE",
         googleEventHtmlLink: "https://calendar.google.com/event?eid=zzz",
       }),
     ];
@@ -175,7 +182,7 @@ describe("buildCalendarActivity — row shape", () => {
       records,
       senderMap: new Map([["msg-1", "Calendar Bot"]]),
     });
-    const row = block!.added[0]!;
+    const row = block!.rescheduled[0]!;
     expect(row.sentence.length).toBeGreaterThan(0);
     expect(row.href).toBe("https://calendar.google.com/event?eid=zzz");
   });

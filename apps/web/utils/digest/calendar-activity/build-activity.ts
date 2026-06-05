@@ -14,13 +14,13 @@ import type {
  *
  *  - Records with outcome === "AMBIGUOUS"  -> `review`.
  *  - Records with outcome === "RESCHEDULE" -> `rescheduled` (Phase 11).
- *  - Records with outcome === "CREATED"    -> `added`.
- *  - Records with outcome === "MATCHED"    -> `confirmed`.
- *  - Records with outcome "FAILED" or "PENDING" are silently excluded (D-16) —
- *    those are internal/operational states and never appear in the digest body.
+ *  - All other outcomes are silently excluded (D-16, amended 2026-06): FAILED and
+ *    PENDING are internal/operational states; MATCHED and CREATED were dropped
+ *    from the digest as diagnostic clutter once the reconciler proved itself —
+ *    the calendar is the record of adds/matches.
  *  - Within each group: ascending by extractedStart (D-14).
- *  - Returns null when all three groups are empty (D-12) so the renderer can
- *    hide the whole section.
+ *  - Returns null when both groups are empty (D-12) so the renderer can hide
+ *    the whole section.
  *
  * Sender resolution: senderMap.get(record.messageId) ?? record.messageId.
  * Plan 10-05's run-daily-digest builds the senderMap from a batched Gmail header
@@ -54,12 +54,7 @@ export interface ReconciliationInput {
   threadId: string;
 }
 
-const SURFACE_OUTCOMES = new Set<string>([
-  "MATCHED",
-  "CREATED",
-  "AMBIGUOUS",
-  "RESCHEDULE",
-]);
+const SURFACE_OUTCOMES = new Set<string>(["AMBIGUOUS", "RESCHEDULE"]);
 
 export function buildCalendarActivity({
   records,
@@ -68,19 +63,15 @@ export function buildCalendarActivity({
   records: ReconciliationInput[];
   senderMap: Map<string, string>;
 }): CalendarActivityBlock | null {
-  // D-16: drop FAILED / PENDING / anything outside the surfaced enum.
+  // D-16: drop anything outside the surfaced outcomes.
   const surfaced = records.filter((r) => SURFACE_OUTCOMES.has(r.outcome));
 
   // Group by outcome.
   const review: ReconciliationInput[] = [];
   const rescheduled: ReconciliationInput[] = [];
-  const added: ReconciliationInput[] = [];
-  const confirmed: ReconciliationInput[] = [];
   for (const r of surfaced) {
     if (r.outcome === "AMBIGUOUS") review.push(r);
     else if (r.outcome === "RESCHEDULE") rescheduled.push(r);
-    else if (r.outcome === "CREATED") added.push(r);
-    else if (r.outcome === "MATCHED") confirmed.push(r);
   }
 
   // D-14: sort each group ascending by extractedStart.
@@ -88,8 +79,6 @@ export function buildCalendarActivity({
     a.extractedStart.getTime() - b.extractedStart.getTime();
   review.sort(byStartAsc);
   rescheduled.sort(byStartAsc);
-  added.sort(byStartAsc);
-  confirmed.sort(byStartAsc);
 
   const toRow = (r: ReconciliationInput): CalendarActivityRow => {
     const sender = senderMap.get(r.messageId) ?? r.messageId;
@@ -111,23 +100,14 @@ export function buildCalendarActivity({
 
   const reviewRows = review.map(toRow);
   const rescheduledRows = rescheduled.map(toRow);
-  const addedRows = added.map(toRow);
-  const confirmedRows = confirmed.map(toRow);
 
-  // D-12: hide the whole section when all groups are empty.
-  if (
-    reviewRows.length === 0 &&
-    rescheduledRows.length === 0 &&
-    addedRows.length === 0 &&
-    confirmedRows.length === 0
-  ) {
+  // D-12: hide the whole section when both groups are empty.
+  if (reviewRows.length === 0 && rescheduledRows.length === 0) {
     return null;
   }
 
   return {
     review: reviewRows,
     rescheduled: rescheduledRows,
-    added: addedRows,
-    confirmed: confirmedRows,
   };
 }
