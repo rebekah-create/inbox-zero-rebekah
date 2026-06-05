@@ -4,10 +4,9 @@ import type { CalendarActivityOutcome } from "./types";
  * D-13 link-target selector for a Calendar Activity row.
  *
  * Rules:
- *  - MATCHED / CREATED / RESCHEDULE with a non-null `googleEventHtmlLink` ->
- *    return that link (deep-links into the user's Google Calendar event; for
- *    RESCHEDULE this is the newly-created event at the new time).
- *  - MATCHED / CREATED with a null `googleEventHtmlLink` (legacy row or upstream
+ *  - RESCHEDULE with a non-null `googleEventHtmlLink` -> return that link
+ *    (deep-links into the newly-created Google Calendar event at the new time).
+ *  - RESCHEDULE with a null `googleEventHtmlLink` (legacy row or upstream
  *    Google API hiccup) -> fall back to the Gmail thread URL. Failure isolation
  *    per D-13: never render a row without a working link.
  *  - AMBIGUOUS always returns the Gmail thread URL — no event was created, so

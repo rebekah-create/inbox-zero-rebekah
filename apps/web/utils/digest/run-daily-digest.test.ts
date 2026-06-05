@@ -162,7 +162,7 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
     (prisma as any).reconciliationRecord.findMany.mockResolvedValue([
       {
         id: "rec-1",
-        outcome: "CREATED",
+        outcome: "RESCHEDULE",
         extractedTitle: "Camping trip",
         extractedStart: new Date(Date.now() + 24 * 60 * 60 * 1000),
         threadId: "thread-rec-1",
@@ -187,9 +187,9 @@ describe("runDailyDigest — Phase 10 agenda + calendar activity wiring", () => 
 
     const call = (sendDigestV2Email as any).mock.calls[0]?.[0];
     expect(call.emailProps.calendarActivity).not.toBeNull();
-    expect(call.emailProps.calendarActivity.added.length).toBe(1);
+    expect(call.emailProps.calendarActivity.rescheduled.length).toBe(1);
     // Sender name lookup landed in the rendered sentence.
-    expect(call.emailProps.calendarActivity.added[0].sentence).toContain(
+    expect(call.emailProps.calendarActivity.rescheduled[0].sentence).toContain(
       "Scout Troop",
     );
   });

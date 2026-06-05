@@ -4,13 +4,13 @@ import type { CalendarActivityOutcome } from "./types";
 /**
  * D-11 sentence templates for Calendar Activity rows (Phase 10).
  *
- * Templates (verbatim from 10-CONTEXT D-11; RESCHEDULE added Phase 11):
+ * Templates (verbatim from 10-CONTEXT D-11; RESCHEDULE added Phase 11; MATCHED
+ * and CREATED templates removed 2026-06 when those outcomes were dropped from
+ * the digest as diagnostic clutter):
  *   AMBIGUOUS  -> "{Sender}: looks like it's about {extractedTitle} — review →"
- *   CREATED    -> "Added {extractedTitle} {day/time} to your calendar (from {sender}) →"
- *   MATCHED    -> "{Sender} confirmed {extractedTitle} — already on your calendar"
  *   RESCHEDULE -> "Looks like {extractedTitle} moved to {day/time} — added the new time, flagged the old event (from {sender}) →"
  *
- * Day/time format for CREATED rows (RESEARCH §"Open Questions #3" recommendation):
+ * Day/time format (RESEARCH §"Open Questions #3" recommendation):
  *   - Timed:   "{dayAbbrev} at {formatAgendaTime}"  e.g. "Mon at 9:00a"
  *   - All-day: "{dayAbbrev}"                         e.g. "Mon"
  *
@@ -46,14 +46,8 @@ export function renderSentence({
   isAllDay: boolean;
 }): string {
   switch (outcome) {
-    case "MATCHED":
-      return `${sender} confirmed ${extractedTitle} — already on your calendar`;
     case "AMBIGUOUS":
       return `${sender}: looks like it's about ${extractedTitle} — review →`;
-    case "CREATED": {
-      const dayTime = formatDayTime(extractedStart, isAllDay);
-      return `Added ${extractedTitle} ${dayTime} to your calendar (from ${sender}) →`;
-    }
     case "RESCHEDULE": {
       const dayTime = formatDayTime(extractedStart, isAllDay);
       return `Looks like ${extractedTitle} moved to ${dayTime} — added the new time, flagged the old event (from ${sender}) →`;

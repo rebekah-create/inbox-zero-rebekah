@@ -2,40 +2,22 @@ import { describe, expect, it } from "vitest";
 import { pickLinkTarget } from "./pick-link-target";
 
 describe("pickLinkTarget — D-13 link selection", () => {
-  it("returns googleEventHtmlLink for MATCHED when link is non-null", () => {
+  it("returns googleEventHtmlLink for RESCHEDULE when link is non-null", () => {
     const href = pickLinkTarget({
-      outcome: "MATCHED",
+      outcome: "RESCHEDULE",
       googleEventHtmlLink: "https://calendar.google.com/event/abc",
       threadId: "T1",
     });
     expect(href).toBe("https://calendar.google.com/event/abc");
   });
 
-  it("returns googleEventHtmlLink for CREATED when link is non-null", () => {
+  it("falls back to Gmail thread URL for RESCHEDULE when googleEventHtmlLink is null", () => {
     const href = pickLinkTarget({
-      outcome: "CREATED",
-      googleEventHtmlLink: "https://calendar.google.com/event/xyz",
-      threadId: "T2",
-    });
-    expect(href).toBe("https://calendar.google.com/event/xyz");
-  });
-
-  it("falls back to Gmail thread URL for MATCHED when googleEventHtmlLink is null", () => {
-    const href = pickLinkTarget({
-      outcome: "MATCHED",
+      outcome: "RESCHEDULE",
       googleEventHtmlLink: null,
       threadId: "T3",
     });
     expect(href).toBe("https://mail.google.com/mail/u/0/#inbox/T3");
-  });
-
-  it("falls back to Gmail thread URL for CREATED when googleEventHtmlLink is null", () => {
-    const href = pickLinkTarget({
-      outcome: "CREATED",
-      googleEventHtmlLink: null,
-      threadId: "T4",
-    });
-    expect(href).toBe("https://mail.google.com/mail/u/0/#inbox/T4");
   });
 
   it("always returns Gmail thread URL for AMBIGUOUS even when googleEventHtmlLink is set", () => {
