@@ -20,10 +20,10 @@
 # tdf-email HANDOFF.md). After creating the tdfurn.com zone in the dashboard,
 # fill in the zone ID and uncomment for the Stage 1 apply, then remove (one-shot,
 # like the SG imports):
-# import {
-#   to = cloudflare_zone.tdfurn
-#   id = "<zone-id-from-dashboard>"
-# }
+import {
+  to = cloudflare_zone.tdfurn
+  id = "f9e51adf3522c2f0b843be1f8cd248fc"
+}
 resource "cloudflare_zone" "tdfurn" {
   account = {
     id = var.cloudflare_account_id
