@@ -1,7 +1,7 @@
 # Server Rebuild Runbook
 
 EC2: t4g.small, us-east-1, free until Dec 2026  
-Domain: inbox.tdfurn.com (Route 53, hosted zone Z19CXOEZPIWEYP)  
+Domain: inbox.tdfurn.com (DNS served by Cloudflare once deploy/CLOUDFLARE-CUTOVER.md Stage 3 is done; domain registration stays at Route 53)  
 All secrets stored in AWS Parameter Store under `/inbox-zero/`
 
 ## Steps to rebuild from scratch
@@ -45,6 +45,17 @@ All secrets stored in AWS Parameter Store under `/inbox-zero/`
    docker exec -i inbox-zero-postgres pg_restore -U inboxzero -d inboxzero /tmp/latest.dump
    ```
 
-8. **Re-install nginx + SSL** (see original setup notes)
+8. **Re-install nginx + TLS**
+   ```bash
+   sudo apt install -y nginx
+   ```
+   The site config is codified at `deploy/nginx/inbox.conf` -- install it to
+   `/etc/nginx/sites-available/inbox`, symlink into `sites-enabled`, and remove
+   the `default` site. The TLS cert is the Cloudflare Origin CA cert stored in
+   SSM (`/inbox-zero-tls/origin-cert` + `/inbox-zero-tls/origin-key`); fetch it
+   to `/etc/ssl/cloudflare/` exactly as described in `deploy/nginx/README.md`
+   (SSM send-command one-liners, chmod 0600, `nginx -t`, reload). No certbot
+   needed -- the Origin CA cert is valid ~15 years and Cloudflare is the only
+   client that needs to trust it.
 
-9. **Verify Gmail watch** is still active — check EmailAccount.watchEmailsExpirationDate in DB
+9. **Verify Gmail watch** is still active -- check EmailAccount.watchEmailsExpirationDate in DB
