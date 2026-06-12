@@ -8,3 +8,18 @@ ec2_instance_role = "inbox-zero-role"
 # touching the OIDC provider, or if another stack in this account already
 # owns the provider.
 create_oidc_provider = true
+
+# Cloudflare account ID (dashboard -> Overview, right-hand column, or
+# Manage Account). Not a secret, but don't commit the real value.
+cloudflare_account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+
+# Cloudflare API credentials come from an env var, not this file:
+#   CLOUDFLARE_API_TOKEN  (token must include SSL and Certificates:Edit
+#   for Origin CA -- see deploy/CLOUDFLARE-CUTOVER.md Stage 0).
+
+# Staged cutover flags -- flip in order per deploy/CLOUDFLARE-CUTOVER.md.
+dns_cutover               = false # Stage 3: repoint registrar NS to Cloudflare
+lock_origin_to_cloudflare = false # Stage 5: close 80/443-to-world, allow 443 from CF only
+
+# Where CloudWatch alarms page to (SNS email -- confirm the subscription!).
+alert_email = "rebekah@trueocean.com"

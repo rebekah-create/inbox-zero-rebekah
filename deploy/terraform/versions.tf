@@ -6,6 +6,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 
   # Remote state in S3. Bucket created out-of-band (see deploy/terraform/README.md).
@@ -22,4 +30,24 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+}
+
+# Cloudflare provider (v5 syntax throughout this stack).
+#
+# Authentication -- supply ONE credential, preferably via environment variable:
+#
+#   CLOUDFLARE_API_TOKEN -- scoped API token with:
+#     Zone.Zone:Edit, Zone.DNS:Edit, Zone.Zone Settings:Edit, Zone.Zone WAF:Edit,
+#     Zone.SSL and Certificates:Edit, plus account-level zone-create permission.
+#
+# NOTE on Origin CA: provider v5 forbids combining api_token with
+# api_user_service_key ("must provide only one of"). The Cloudflare API has
+# accepted API tokens on the Origin CA endpoints since Aug 2022, so instead of
+# the legacy Origin CA Key (CLOUDFLARE_API_USER_SERVICE_KEY) this stack relies
+# on the token carrying "Zone > SSL and Certificates > Edit". Keep the Origin
+# CA Key handy as a fallback only (see CLOUDFLARE-CUTOVER.md Stage 0).
+#
+# The var below defaults to "" so the provider falls back to the env var.
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token != "" ? var.cloudflare_api_token : null
 }

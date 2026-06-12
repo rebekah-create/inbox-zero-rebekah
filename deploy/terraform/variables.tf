@@ -42,3 +42,39 @@ variable "openrouter_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID (dashboard -> any zone -> Overview, right column, or Manage Account). Not a secret, but personal -- committed tfvars carries a placeholder."
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token (scopes: Zone:Edit, DNS:Edit, Zone Settings:Edit, Zone WAF:Edit, SSL and Certificates:Edit -- the last one covers Origin CA cert issuance). Prefer the CLOUDFLARE_API_TOKEN environment variable over setting this; leave at the empty-string default to use the env var."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "vpc_id" {
+  description = "VPC the inbox-zero security group lives in."
+  type        = string
+  default     = "vpc-d2fe1db5"
+}
+
+variable "dns_cutover" {
+  description = "THE cutover switch. When true, repoints the tdfurn.com registrar nameservers to the Cloudflare zone's nameservers. See deploy/CLOUDFLARE-CUTOVER.md Stage 3 before flipping this."
+  type        = bool
+  default     = false
+}
+
+variable "lock_origin_to_cloudflare" {
+  description = "When true, removes the 0.0.0.0/0 ingress on ports 80/443 and allows 443 only from Cloudflare edge IP ranges. Flip only after the Origin CA cert is installed on nginx (CLOUDFLARE-CUTOVER.md Stage 5)."
+  type        = bool
+  default     = false
+}
+
+variable "alert_email" {
+  description = "Email address subscribed to the inbox-zero-alerts SNS topic. The subscription must be confirmed by clicking the link AWS emails after apply."
+  type        = string
+  default     = "rebekah@trueocean.com"
+}
