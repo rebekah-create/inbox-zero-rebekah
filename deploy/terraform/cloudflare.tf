@@ -271,6 +271,11 @@ resource "cloudflare_zone_setting" "min_tls_version" {
 # NOTE: Bot Fight Mode CANNOT be skipped by this (or any) rule on the free
 # plan -- it must remain OFF in the dashboard (it is off by default). If the
 # webhook ever starts getting 403s from Cloudflare, check that first.
+#
+# The skip phases deliberately omit http_request_sbfm: Super Bot Fight Mode
+# is a Pro+ feature, so on a free zone that phase is never provisioned and
+# the rulesets API may reject a rule referencing it. If the zone is ever
+# upgraded and SBFM enabled, add "http_request_sbfm" back to the list.
 # ---------------------------------------------------------------------------
 
 resource "cloudflare_ruleset" "webhook_skip" {
@@ -288,7 +293,6 @@ resource "cloudflare_ruleset" "webhook_skip" {
       action_parameters = {
         phases = [
           "http_ratelimit",
-          "http_request_sbfm",
           "http_request_firewall_managed",
         ]
         products = [

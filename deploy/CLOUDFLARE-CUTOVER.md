@@ -136,6 +136,16 @@ otherwise.
 dashboard) -- nothing references Cloudflare yet, registrar still points at
 Route 53. AWS-side observability resources are harmless to keep.
 
+Note: the zone-targeted destroy does NOT remove
+`cloudflare_origin_ca_certificate.inbox` or the `/inbox-zero-tls/*` SSM
+parameters -- they hang off the CSR, not the zone, so they survive. They are
+harmless to keep (an unused cert + two parked SSM parameters). If abandoning
+Cloudflare entirely, destroy them too:
+
+```powershell
+tofu destroy -target=cloudflare_origin_ca_certificate.inbox -target=aws_ssm_parameter.origin_cert -target=aws_ssm_parameter.origin_key
+```
+
 ---
 
 ## Stage 2 -- CloudWatch agent on the box (no traffic impact)
@@ -287,6 +297,18 @@ tofu apply plan.out
 Port 80 is intentionally gone after this: Cloudflare connects to the origin
 on 443 (Full strict + Origin CA), and ACME HTTP-01 is no longer needed.
 
+### REQUIRED post-step -- disable the certbot timer
+
+With port 80 closed, every certbot HTTP-01 renewal attempt fails and generates
+recurring error noise (failed systemd runs, certbot error logs). The Origin CA
+cert is valid ~15 years, so certbot has nothing left to renew. Disable it now:
+
+```powershell
+aws ssm send-command --region us-east-1 --instance-ids i-0ddd8a31e870a696e `
+  --document-name AWS-RunShellScript --comment "disable certbot timer" `
+  --parameters 'commands=["sudo systemctl disable --now certbot.timer"]'
+```
+
 ### Verify
 
 ```powershell
@@ -304,7 +326,10 @@ Send a test email and confirm webhook 200s keep appearing in
 ### Rollback
 
 Set `lock_origin_to_cloudflare = false` and apply -- recreates the 80/443
-open-to-world rules (new sgr- IDs, same effect).
+open-to-world rules (new sgr- IDs, same effect). If rolling back to Let's
+Encrypt TLS, also re-enable the certbot timer (same SSM send-command pattern
+as above, with `sudo systemctl enable --now certbot.timer`) -- consistent
+with the rollback steps in `deploy/nginx/README.md`.
 
 ---
 
@@ -321,14 +346,8 @@ Once Cloudflare has been answering cleanly for a week:
    aws route53 delete-hosted-zone --id Z19CXOEZPIWEYP
    ```
 
-2. Optionally disable certbot on the box (the Origin CA cert outlives the
-   instance):
-
-   ```powershell
-   aws ssm send-command --region us-east-1 --instance-ids i-0ddd8a31e870a696e `
-     --document-name AWS-RunShellScript --comment "disable certbot timer" `
-     --parameters 'commands=["sudo systemctl disable --now certbot.timer"]'
-   ```
+(The certbot timer was already disabled as a required Stage 5 post-step --
+nothing else to clean up on the box.)
 
 Note: after the hosted zone is deleted, the Stage 3 rollback path no longer
 has a Route 53 zone to fall back to -- rebuilding it from
