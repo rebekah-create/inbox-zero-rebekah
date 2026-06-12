@@ -19,20 +19,33 @@ Stage 1-2 affects live traffic.
 
 ## Stage 0 -- Prerequisites (manual, one-time)
 
-1. Create a free Cloudflare account (https://dash.cloudflare.com/sign-up).
-2. Note the **Account ID** (dashboard -> Manage Account, or any zone Overview
-   page, right-hand column). Put it in `deploy/terraform/terraform.tfvars`
-   as `cloudflare_account_id` (file is gitignored).
-3. Create an **API token** (My Profile -> API Tokens -> Create Token ->
-   Custom). Permissions:
+1. The Cloudflare account **already exists** -- account ID
+   `3b8da3715845965764758f419faf7054` (it manages
+   topdrawerfurniturestore.com via the tdf-email project's OpenTofu stack).
+   Do NOT create a new account. The account ID is already filled in
+   `deploy/terraform/terraform.tfvars.example`; copy it into
+   `deploy/terraform/terraform.tfvars` as `cloudflare_account_id` (account
+   IDs are not secret).
+2. Add the **tdfurn.com zone via the dashboard** (Add site -> tdfurn.com ->
+   Free plan). API tokens in this account have failed zone creation before
+   (see tdf-email HANDOFF.md); the established pattern is dashboard-create,
+   then import into Tofu. Cloudflare shows its assigned nameservers
+   immediately -- do **NOT** change the registrar NS yet; that is Stage 3.
+   Note the **Zone ID** from the zone's Overview page (right-hand column) --
+   Stage 1 needs it for the import block.
+3. Mint a **NEW API token** (My Profile -> API Tokens -> Create Token ->
+   Custom). The two existing tokens in this account do NOT have sufficient
+   scopes -- the tdf-email token lacks Zone-create / Zone Settings / WAF /
+   SSL-Certs edit, and the forager token is Workers-only. Do not try to
+   reuse them. Permissions:
    - Zone -> Zone -> Edit
    - Zone -> DNS -> Edit
    - Zone -> Zone Settings -> Edit
-   - Zone -> Zone WAF -> Edit
+   - Zone -> Firewall Services -> Edit  (covers WAF custom rulesets)
    - Zone -> SSL and Certificates -> Edit  (covers Origin CA cert issuance)
-   - Account-level zone-create: under "Zone Resources" select
-     "Include -> All zones from an account -> <your account>". Creating a new
-     zone via API requires the token be account-scoped this way.
+   - Zone Resources: "Include -> All zones from an account ->
+     <this account>". Per the tdf-email HANDOFF.md, specific-zone scoping
+     has caused issues in this account -- use the account-wide scope.
 4. (Fallback only) Retrieve the **Origin CA Key** (Manage Account -> API Keys
    -> Origin CA Key, starts with `v1.0-`). Provider v5 cannot combine it with
    an API token ("must provide only one of api_token, api_user_service_key"),
@@ -58,17 +71,26 @@ Stage 1-2 affects live traffic.
 
 ## Stage 1 -- Apply (no traffic impact)
 
-With both flags `false`:
+Pre-apply checklist:
+
+1. Both flags `false` in `terraform.tfvars`.
+2. Fill the zone ID from Stage 0 step 2 into the commented-out `import` block
+   above `resource "cloudflare_zone" "tdfurn"` in
+   `deploy/terraform/cloudflare.tf` and uncomment it -- the apply adopts the
+   dashboard-created zone instead of trying to create one (zone creation via
+   API token fails in this account).
 
 ```powershell
 cd deploy/terraform
 tofu init
-tofu plan -out plan.out    # review: CF zone+records+settings+WAF+origin cert,
-                           # SG imports, prefix lists, log groups, alarms, SNS
+tofu plan -out plan.out    # review: CF zone import+records+settings+WAF+origin
+                           # cert, SG imports, prefix lists, log groups,
+                           # alarms, SNS
 tofu apply plan.out
 ```
 
-This creates the Cloudflare zone + all DNS records (mirroring Route 53),
+This imports the dashboard-created Cloudflare zone and creates all DNS records
+(mirroring Route 53),
 zone settings (SSL strict, always-HTTPS, TLS 1.2 floor), the webhook WAF skip
 rule, the Origin CA cert (stored in SSM `/inbox-zero-tls/*`), the CloudWatch
 log groups / metric filters / alarms / SNS topic, and imports the existing
@@ -128,7 +150,9 @@ CNAMEs -- DMARC is `p=reject`; drift here bounces real mail.
 Housekeeping after a successful first apply: delete (or comment out) the two
 ingress-rule `import` blocks in `deploy/terraform/network.tf` (see the comment
 at the top of that file). They are one-shot and will break the plan at Stage 5
-otherwise.
+otherwise. Also re-comment (or delete) the `cloudflare_zone.tdfurn` import
+block in `deploy/terraform/cloudflare.tf` -- same one-shot deal; once the zone
+is in state the block has done its job.
 
 ### Rollback
 

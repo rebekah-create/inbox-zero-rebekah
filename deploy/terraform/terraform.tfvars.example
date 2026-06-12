@@ -10,8 +10,9 @@ ec2_instance_role = "inbox-zero-role"
 create_oidc_provider = true
 
 # Cloudflare account ID (dashboard -> Overview, right-hand column, or
-# Manage Account). Not a secret, but don't commit the real value.
-cloudflare_account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+# Manage Account). Account IDs are not secret; this is the real value for the
+# existing account (already manages topdrawerfurniturestore.com via tdf-email).
+cloudflare_account_id = "3b8da3715845965764758f419faf7054"
 
 # Cloudflare API credentials come from an env var, not this file:
 #   CLOUDFLARE_API_TOKEN  (token must include SSL and Certificates:Edit

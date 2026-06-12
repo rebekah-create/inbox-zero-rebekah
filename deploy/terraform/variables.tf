@@ -44,7 +44,7 @@ variable "openrouter_api_key" {
 }
 
 variable "cloudflare_account_id" {
-  description = "Cloudflare account ID (dashboard -> any zone -> Overview, right column, or Manage Account). Not a secret, but personal -- committed tfvars carries a placeholder."
+  description = "Cloudflare account ID (dashboard -> any zone -> Overview, right column, or Manage Account). Not a secret -- the example tfvars carries the real value."
   type        = string
 }
 

@@ -15,6 +15,15 @@
 #   API normalizes them to lowercase (DNS is case-insensitive; Route 53 showed
 #   ASPMX.L.GOOGLE.COM etc. in uppercase)
 
+# The established pattern in this Cloudflare account is to create zones via the
+# dashboard and import them (API tokens here have failed zone creation; see
+# tdf-email HANDOFF.md). After creating the tdfurn.com zone in the dashboard,
+# fill in the zone ID and uncomment for the Stage 1 apply, then remove (one-shot,
+# like the SG imports):
+# import {
+#   to = cloudflare_zone.tdfurn
+#   id = "<zone-id-from-dashboard>"
+# }
 resource "cloudflare_zone" "tdfurn" {
   account = {
     id = var.cloudflare_account_id
