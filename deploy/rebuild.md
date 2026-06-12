@@ -1,7 +1,7 @@
 # Server Rebuild Runbook
 
 EC2: t4g.small, us-east-1, free until Dec 2026  
-Domain: inbox.tdfurn.com (DNS served by Cloudflare once deploy/CLOUDFLARE-CUTOVER.md Stage 3 is done; domain registration stays at Route 53)  
+Domain: inbox.tdfurn.com (DNS served by Cloudflare once CLOUDFLARE-CUTOVER.md Stage 3 in the [inbox-zero-infra](https://github.com/rebekah-create/inbox-zero-infra) repo is done; domain registration stays at Route 53)  
 All secrets stored in AWS Parameter Store under `/inbox-zero/`
 
 ## Steps to rebuild from scratch
@@ -49,13 +49,16 @@ All secrets stored in AWS Parameter Store under `/inbox-zero/`
    ```bash
    sudo apt install -y nginx
    ```
-   The site config is codified at `deploy/nginx/inbox.conf` -- install it to
-   `/etc/nginx/sites-available/inbox`, symlink into `sites-enabled`, and remove
-   the `default` site. The TLS cert is the Cloudflare Origin CA cert stored in
-   SSM (`/inbox-zero-tls/origin-cert` + `/inbox-zero-tls/origin-key`); fetch it
-   to `/etc/ssl/cloudflare/` exactly as described in `deploy/nginx/README.md`
-   (SSM send-command one-liners, chmod 0600, `nginx -t`, reload). No certbot
-   needed -- the Origin CA cert is valid ~15 years and Cloudflare is the only
-   client that needs to trust it.
+   The site config is codified at `nginx/inbox.conf` in the
+   [inbox-zero-infra](https://github.com/rebekah-create/inbox-zero-infra) repo
+   (local checkout: `C:\Users\rebek\projects\inbox-zero-infra`) -- install it
+   to `/etc/nginx/sites-available/inbox`, symlink into `sites-enabled`, and
+   remove the `default` site. The TLS cert is the Cloudflare Origin CA cert
+   stored in SSM (`/inbox-zero-tls/origin-cert` + `/inbox-zero-tls/origin-key`);
+   fetch it to `/etc/ssl/cloudflare/` exactly as described in that repo's
+   `nginx/README.md` (SSM send-command one-liners, chmod 0600, `nginx -t`,
+   reload). No certbot needed -- the Origin CA cert is valid ~15 years and
+   Cloudflare is the only client that needs to trust it. The staged cutover
+   runbook is that repo's `CLOUDFLARE-CUTOVER.md`.
 
 9. **Verify Gmail watch** is still active -- check EmailAccount.watchEmailsExpirationDate in DB
