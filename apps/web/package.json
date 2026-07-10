@@ -120,7 +120,7 @@
     "@vercel/queue": "0.1.6",
     "@vercel/speed-insights": "2.0.0",
     "ai": "6.0.168",
-    "better-auth": "1.6.11",
+    "better-auth": "1.6.13",
     "braintrust": "3.8.0",
     "bullmq": "5.74.1",
     "capital-case": "2.0.0",
