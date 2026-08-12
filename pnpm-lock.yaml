@@ -780,8 +780,8 @@ importers:
         specifier: 2.0.7
         version: 2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       nanoid:
-        specifier: 5.1.9
-        version: 5.1.9
+        specifier: 5.1.16
+        version: 5.1.16
       react:
         specifier: 19.2.5
         version: 19.2.5
@@ -10299,8 +10299,8 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  nanoid@5.1.9:
-    resolution: {integrity: sha512-ZUvP7KeBLe3OZ1ypw6dI/TzYJuvHP77IM4Ry73waSQTLn8/g8rpdjfyVAh7t1/+FjBtG4lCP42MEbDxOsRpBMw==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -17884,7 +17884,7 @@ snapshots:
 
   '@sanity/bifur-client@1.0.0':
     dependencies:
-      nanoid: 5.1.9
+      nanoid: 5.1.16
       rxjs: 7.8.2
 
   '@sanity/blueprints-parser@0.4.0': {}
@@ -17969,7 +17969,7 @@ snapshots:
       jsonc-parser: 3.3.1
       lodash-es: 4.18.1
       minimist: 1.2.8
-      nanoid: 5.1.9
+      nanoid: 5.1.16
       node-html-parser: 7.1.0
       oneline: 2.0.0
       open: 11.0.0
@@ -18216,7 +18216,7 @@ snapshots:
       hotscript: 1.0.13
       lodash: 4.18.1
       mendoza: 3.0.8
-      nanoid: 5.1.9
+      nanoid: 5.1.16
       rxjs: 7.8.2
 
   '@sanity/mutate@0.16.1(xstate@5.28.0)':
@@ -18227,7 +18227,7 @@ snapshots:
       hotscript: 1.0.13
       lodash: 4.18.1
       mendoza: 3.0.8
-      nanoid: 5.1.9
+      nanoid: 5.1.16
       rxjs: 7.8.2
     optionalDependencies:
       xstate: 5.28.0
@@ -23958,7 +23958,7 @@ snapshots:
 
   nanoid@3.3.12: {}
 
-  nanoid@5.1.9: {}
+  nanoid@5.1.16: {}
 
   nanostores@1.4.1: {}
 
