@@ -22,7 +22,7 @@ export async function getBatch(
 
   let batchRequestBody = "";
   for (const id of ids) {
-    batchRequestBody += `--batch_boundary\nContent-Type: application/http\n\nGET ${endpoint}/${id}\n\n`;
+    batchRequestBody += `--batch_boundary\nContent-Type: application/http\n\nGET ${endpoint}/${encodeURIComponent(id)}\n\n`;
   }
   batchRequestBody += "--batch_boundary--";
 
