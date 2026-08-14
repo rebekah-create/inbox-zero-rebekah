@@ -5,9 +5,14 @@
 #   - Weekly cadence (Monday morning) — single batched review window.
 #   - Group non-major bumps by ecosystem so it's one PR to skim, not 30.
 #   - Major-version bumps stay individual — those need real review.
-#   - Cap open PRs at 5 to keep noise bounded.
+#   - Cap open PRs to keep noise bounded, but leave headroom (see below).
 #
-# Security-only updates (CVEs) bypass these settings and arrive immediately.
+# Security-only updates (CVEs) bypass the *grouping* above and arrive as
+# individual PRs — but they still count against open-pull-requests-limit. A
+# burst of advisories on one package therefore eats the cap and silently
+# suppresses everything behind it, which is how the github-actions ecosystem
+# sat at exactly 3/3 open while new bumps went unraised. Limits below are set
+# with that burst case in mind, not the steady-state weekly volume.
 
 version: 2
 
@@ -20,7 +25,7 @@ updates:
       day: "monday"
       time: "07:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "npm"
@@ -84,7 +89,7 @@ updates:
       day: "monday"
       time: "07:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "github-actions"
