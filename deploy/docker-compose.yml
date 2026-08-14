@@ -60,7 +60,12 @@ services:
       GOOGLE_PUBSUB_TOPIC_NAME: ${GOOGLE_PUBSUB_TOPIC_NAME}
       GOOGLE_PUBSUB_VERIFICATION_TOKEN: ${GOOGLE_PUBSUB_VERIFICATION_TOKEN}
 
-      # LLM — using Anthropic (Claude)
+      # LLM — routed through OpenRouter (prepaid credit). ANTHROPIC_API_KEY is
+      # kept so flipping *_LLM_PROVIDER back to `anthropic` needs no code change.
+      # Every provider key referenced by a *_LLM_PROVIDER value must be listed
+      # here — compose only forwards vars named in this block, so a key that
+      # exists in .env but is missing here silently reaches the app as unset.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
 
       # Email sending via SES (SMTP)
@@ -78,6 +83,7 @@ services:
       EMAIL_ENCRYPT_SECRET: ${EMAIL_ENCRYPT_SECRET}
       EMAIL_ENCRYPT_SALT: ${EMAIL_ENCRYPT_SALT}
       DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER}
+      DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL}
       ECONOMY_LLM_PROVIDER: ${ECONOMY_LLM_PROVIDER}
       ECONOMY_LLM_MODEL: ${ECONOMY_LLM_MODEL}
       CHAT_LLM_PROVIDER: ${ECONOMY_LLM_PROVIDER}
