@@ -207,6 +207,7 @@ const REDACTED_FIELD_NAMES = new Set([
   "headers",
   "authorization",
   "requestBodyValues",
+  "receivedState",
   "systemInstruction",
   "contents",
 ]);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { env } from "@/env";
 import type { Logger } from "@/utils/logger";
 import {
@@ -248,7 +249,7 @@ function validateOAuthCallback(
   });
   if (!stateValidation.success) {
     logger.warn("Invalid state during Slack callback", {
-      receivedState,
+      receivedStateFingerprint: getOAuthStateFingerprint(receivedState),
       hasStoredState: !!storedState,
       error: stateValidation.error,
     });
@@ -286,6 +287,12 @@ function parseAndValidateSlackState(
   }
 
   return validationResult.data;
+}
+
+// Keeps log correlation across a failed OAuth exchange without writing the
+// signed state itself to the log sink.
+function getOAuthStateFingerprint(state: string) {
+  return `sha256:${createHash("sha256").update(state).digest("hex").slice(0, 12)}`;
 }
 
 function extractEmailAccountIdFromState(state: string): string | null {

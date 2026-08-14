@@ -193,16 +193,50 @@ describe("Middleware", () => {
       });
     });
 
+    it("logs the request path without query parameters", async () => {
+      const verificationToken = "google-webhook-secret";
+      mockReq = createMockRequest(
+        "POST",
+        `http://localhost/api/google/webhook?token=${verificationToken}`,
+      );
+      const consoleLogSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      try {
+        const wrappedHandler = withError("google/webhook", async (request) => {
+          request.logger.info("Processing webhook");
+          return NextResponse.json({ ok: true });
+        });
+
+        await wrappedHandler(mockReq, mockContext);
+
+        const loggedMessage = consoleLogSpy.mock.calls.flat().join(" ");
+        expect(loggedMessage).toContain('"url": "/api/google/webhook"');
+        expect(loggedMessage).not.toContain(verificationToken);
+      } finally {
+        consoleLogSpy.mockRestore();
+      }
+    });
+
     it("should handle common errors using checkCommonErrors", async () => {
       const commonError = { message: "API Error", code: 409, type: "Conflict" };
       mockCheckCommonErrors.mockReturnValue(commonError);
-      const handler = vi.fn().mockRejectedValue(new Error("Some API error"));
+      const apiError = new Error("Some API error");
+      mockReq = createMockRequest(
+        "GET",
+        "http://localhost/api/google/webhook?token=webhook-secret",
+      );
+      const handler = vi.fn().mockRejectedValue(apiError);
       const wrappedHandler = withError(handler);
 
       const response = await wrappedHandler(mockReq, mockContext);
       const responseBody = await response.json();
 
-      expect(checkCommonErrors).toHaveBeenCalled();
+      expect(checkCommonErrors).toHaveBeenCalledWith(
+        apiError,
+        "/api/google/webhook",
+        expect.anything(),
+      );
       expect(response.status).toBe(commonError.code);
       expect(responseBody).toEqual({
         error: commonError.message,
