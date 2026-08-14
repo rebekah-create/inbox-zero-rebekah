@@ -286,7 +286,7 @@ describe("Middleware", () => {
 
       expect(checkCommonErrors).toHaveBeenCalled();
       expect(mockCaptureException).toHaveBeenCalledWith(unexpectedError, {
-        extra: { url: mockReq.url },
+        extra: { url: mockReq.nextUrl.pathname },
       });
       expect(response.status).toBe(500);
       expect(responseBody).toEqual({ error: "An unexpected error occurred" });
@@ -345,7 +345,7 @@ describe("Middleware", () => {
       expect(auth).toHaveBeenCalledTimes(1);
       expect(handler).not.toHaveBeenCalled();
       expect(mockCaptureException).toHaveBeenCalledWith(authError, {
-        extra: { url: mockReq.url },
+        extra: { url: mockReq.nextUrl.pathname },
       });
       expect(response.status).toBe(500);
       expect(responseBody).toEqual({
@@ -574,7 +574,7 @@ describe("Middleware", () => {
       expect(handler).not.toHaveBeenCalled();
       expect(checkCommonErrors).toHaveBeenCalledWith(
         rateLimitError,
-        mockReq.url,
+        mockReq.nextUrl.pathname,
         expect.anything(),
       );
       expect(mockRecordRateLimitFromApiError).toHaveBeenCalledWith(
@@ -624,7 +624,7 @@ describe("Middleware", () => {
       expect(handler).not.toHaveBeenCalled();
       expect(checkCommonErrors).toHaveBeenCalledWith(
         rateLimitError,
-        mockReq.url,
+        mockReq.nextUrl.pathname,
         expect.anything(),
       );
       expect(mockRecordRateLimitFromApiError).toHaveBeenCalledWith(
