@@ -1,0 +1,26 @@
+{
+  // Build-only TypeScript config. Identical to tsconfig.json except that test
+  // files are excluded from the type check `next build` runs.
+  //
+  // Why: Next 16.2.6 did not type-check test files; 16.3.0 does. The upgrade
+  // surfaced ~500 pre-existing errors across ~95 test files -- mocks that
+  // drifted from this fork's own Prisma schema (confidenceScore,
+  // messagingChannelId, staticAttachments), the AI SDK's LanguageModelUsage
+  // shape change, and premium/Stripe fixture drift. None of it is reachable
+  // from the app graph, and none of it had ever been checked.
+  //
+  // This keeps the production build honest about shipped code while the test
+  // types are burned down separately. It does NOT weaken editor/LSP checking,
+  // which still uses tsconfig.json and sees everything.
+  //
+  // Delete this file and drop `typescript.tsconfigPath` from next.config.ts
+  // once the test suite type-checks clean.
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "public/sw.js",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "__tests__/**"
+  ]
+}

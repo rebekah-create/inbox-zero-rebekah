@@ -74,7 +74,7 @@ function withMiddleware<T extends NextRequest>(
     const requestId = req.headers.get("x-request-id") || randomUUID();
     const baseLogger = createScopedLogger(scope || "api").with({
       requestId,
-      url: req.url,
+      url: getRequestPath(req),
     });
     const requestTimer =
       options?.requestTiming !== undefined
@@ -157,7 +157,11 @@ function withMiddleware<T extends NextRequest>(
         );
       }
 
-      const apiError = checkCommonErrors(error, requestForError.url, reqLogger);
+      const apiError = checkCommonErrors(
+        error,
+        getRequestPath(requestForError),
+        reqLogger,
+      );
       if (apiError) {
         await recordRateLimitFromApiError({
           apiErrorType: apiError.type,
@@ -169,7 +173,7 @@ function withMiddleware<T extends NextRequest>(
 
         await logErrorToPosthog(
           "api",
-          requestForError.url,
+          getRequestPath(requestForError),
           apiError.type,
           "unknown",
           reqLogger,
@@ -208,7 +212,9 @@ function withMiddleware<T extends NextRequest>(
             : undefined,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      captureException(error, { extra: { url: requestForError.url } });
+      captureException(error, {
+        extra: { url: getRequestPath(requestForError) },
+      });
 
       return NextResponse.json(
         { error: "An unexpected error occurred" },
@@ -650,12 +656,19 @@ function getEmailAccountId(req: NextRequest): string | undefined {
   return authReq.auth?.emailAccountId;
 }
 
+// `req.url` carries the query string, which on OAuth callbacks holds the
+// authorization code and state. Log the path only -- nothing downstream needs
+// the query, and logs/Sentry/PostHog are all third-party sinks.
+function getRequestPath(req: NextRequest) {
+  return req.nextUrl.pathname;
+}
+
 function flushLogger(req: NextRequest) {
   const reqWithLogger = req as RequestWithLogger;
   if (reqWithLogger.logger) {
     const loggerToFlush = reqWithLogger.logger;
     after(async () => {
-      await flushLoggerSafely(loggerToFlush, { url: req.url });
+      await flushLoggerSafely(loggerToFlush, { url: getRequestPath(req) });
     });
   }
 }
