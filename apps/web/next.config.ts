@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
   // Skip TypeScript checking during E2E CI builds to save memory
   typescript: {
     ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === "true",
+    // Excludes test files from the build's type check. See tsconfig.build.json
+    // for why, and for the conditions under which it should be removed.
+    tsconfigPath: "tsconfig.build.json",
   },
   serverExternalPackages: [
     "@sentry/nextjs",
