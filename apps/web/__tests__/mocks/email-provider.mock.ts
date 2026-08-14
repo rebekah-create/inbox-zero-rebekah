@@ -158,7 +158,6 @@ export function createMockEmailProvider(
     getInboxStats: vi.fn().mockResolvedValue({ total: 0, unread: 0 }),
 
     // Watch/webhooks
-    processHistory: vi.fn().mockResolvedValue(undefined),
     watchEmails: vi.fn().mockResolvedValue({
       expirationDate: new Date(),
       subscriptionId: "sub-123",
