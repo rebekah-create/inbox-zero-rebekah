@@ -31,8 +31,14 @@ overrides:
   # Keep in lockstep with apps/web/package.json. This override is authoritative:
   # while it sat at 16.2.6, five separate Dependabot bumps of the manifest
   # (#91/#92/#95/#96/#97) were silently clamped back on install, so the shipped
-  # app stayed on 16.2.6 with the 16.2.11 advisories open. Matches upstream.
-  next: "16.3.0"
+  # app stayed on 16.2.6 with the 16.2.11 advisories open.
+  #
+  # Deliberately 16.2.11 and NOT upstream's 16.3.0: 16.3.0 has an intermittent
+  # Turbopack failure evaluating postcss.config.js ("__turbopack_context__.a is
+  # not a function"), which broke roughly half of all builds on both x64 CI and
+  # arm64 Docker. 16.2.11 is the highest version any next advisory requires, so
+  # this gives up nothing on security. Revisit 16.3.x once that is fixed.
+  next: "16.2.11"
   postcss: "8.5.14"
   protobufjs: "7.5.6"        # ours: proto-pollution / code-gen (via posthog + google-genai telemetry)
   svelte: "5.55.5"
