@@ -180,7 +180,7 @@
     "react-youtube": "10.1.0",
     "recharts": "2.15.4",
     "remark-gfm": "4.0.1",
-    "sanity-plugin-markdown": "8.0.5",
+    "sanity-plugin-markdown": "9.0.13",
     "schema-dts": "2.0.0",
     "serialize-error": "13.0.1",
     "server-only": "0.0.1",
