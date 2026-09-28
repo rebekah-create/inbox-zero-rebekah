@@ -73,7 +73,7 @@
     "@next/third-parties": "16.2.4",
     "@openrouter/ai-sdk-provider": "2.8.0",
     "@portabletext/react": "6.0.3",
-    "@posthog/ai": "7.16.0",
+    "@posthog/ai": "8.13.2",
     "@prisma/adapter-pg": "7.7.0",
     "@prisma/client": "7.7.0",
     "@radix-ui/react-alert-dialog": "1.1.15",
