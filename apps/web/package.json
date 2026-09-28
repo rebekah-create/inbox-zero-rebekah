@@ -160,7 +160,7 @@
     "nodemailer": "9.1.1",
     "nuqs": "2.8.9",
     "ollama-ai-provider-v2": "3.5.0",
-    "openai": "6.34.0",
+    "openai": "7.23.0",
     "p-queue": "9.1.2",
     "p-retry": "8.0.0",
     "pg": "8.20.0",
