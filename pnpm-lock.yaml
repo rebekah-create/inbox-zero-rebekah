@@ -486,8 +486,8 @@ importers:
         specifier: 0.4.6
         version: 0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       nodemailer:
-        specifier: 9.1.1
-        version: 9.1.1
+        specifier: 10.0.9
+        version: 10.0.9
       nuqs:
         specifier: 2.10.1
         version: 2.10.1(next@16.2.11(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
@@ -3747,8 +3747,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@mongodb-js/saslprep@1.5.4':
-    resolution: {integrity: sha512-05UC0jQsjKAOuXQ0H9Ud9vUTJpZIg+n/FinpR30tI5I8pY2inTfPOZ5OF/cg3Ce/N9MoD1xhRCeOsJtuTbFYlw==}
+  '@mongodb-js/saslprep@1.5.5':
+    resolution: {integrity: sha512-0PV4mvjGd2Q2/viDvXuoSNzTjQngHvtuWUry1vqvcK4Q/CTeO1zEKMf9set01DMocJnogl/pyNAdvyk+Pe0kQA==}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -6035,8 +6035,8 @@ packages:
     resolution: {integrity: sha512-Y1XfSefHIOub9762qm3ShafdlEE/Va8h3kLUeMq765fNeWeNLcOP2YUPr86H1SlyGwZTOqQ67RlBZPZ3k9Djgg==}
     engines: {node: '>=18.0.0'}
 
-  '@smithy/core@3.35.0':
-    resolution: {integrity: sha512-zRMhfkByhT2snNdr1si24vJitU6Cr9ix2MikUfWmkAgp4jrNP0GcKSP5YvwQ+TlI8AZXER5QOGJn3JsVtSD9/A==}
+  '@smithy/core@3.35.1':
+    resolution: {integrity: sha512-i4YPS4B6ts7bjn7UwLnGjiZdprOvHvgGobFZsYK3GIY3E5hIqtj0rReU69BcTpGp+fvtraSNXeG1l+jtJvF55w==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/eventstream-codec@4.0.5':
@@ -8264,8 +8264,8 @@ packages:
     resolution: {integrity: sha512-z34mGpLoY/82ZbkX1LqGMIaf3wjVMPL6gVC681QDqnmzJ26synI8qAE32P+a7UazmpJZ8UGrFIeAavgRfXzYrg==}
     engines: {node: '>=10.2.0'}
 
-  enhanced-resolve@5.25.1:
-    resolution: {integrity: sha512-nGXts5znJzmWPu+mIE9izCOzdg63oJca2mDzGWWTth7sr4aCToKcoyFVBQwN75Ij5Pf6p510EwkTqViTRzDV+w==}
+  enhanced-resolve@5.26.0:
+    resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
     engines: {node: '>=10.13.0'}
 
   entities@4.5.0:
@@ -10208,9 +10208,9 @@ packages:
   node-rsa@1.1.1:
     resolution: {integrity: sha512-Jd4cvbJMryN21r5HgxQOpMEqv+ooke/korixNNK3mGqfGJmy0M77WDDzo/05969+OkMy3XW1UuZsSmW9KQm7Fw==}
 
-  nodemailer@9.1.1:
-    resolution: {integrity: sha512-izw9mVKFix6YSnC9eLgV6g1opl9DUlRio9ZNcq+Wu9Ujn2UwF+8Nl0B8nz22kEC+CTZCvinkxwJ0DeFbb6NwcQ==}
-    engines: {node: '>=6.0.0'}
+  nodemailer@10.0.9:
+    resolution: {integrity: sha512-BF0qcyplCwp+jMk6HCjFykBz/YhhZSsxrARhOldLwFWH+8kGjQsd2WIMIZhqEuyXRoGFi0ONbDeWDMDoL8MhLw==}
+    engines: {node: '>=20.0.0'}
 
   non-error@0.1.0:
     resolution: {integrity: sha512-TMB1uHiGsHRGv1uYclfhivcnf0/PdFp2pNqRxXjncaAsjYMoisaQJI+SSZCqRq+VliwRTC8tsMQfmrWjDMhkPQ==}
@@ -11624,6 +11624,10 @@ packages:
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+    engines: {node: '>=0.10.0'}
+
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   source-map-support@0.5.21:
@@ -13274,7 +13278,7 @@ snapshots:
     dependencies:
       '@aws-sdk/types': 3.910.0
       '@aws-sdk/xml-builder': 3.911.0
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/node-config-provider': 4.6.2
       '@smithy/property-provider': 4.5.2
       '@smithy/protocol-http': 5.6.2
@@ -13329,7 +13333,7 @@ snapshots:
       '@aws-sdk/core': 3.911.0
       '@aws-sdk/types': 3.910.0
       '@aws-sdk/util-endpoints': 3.910.0
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/protocol-http': 5.6.2
       '@smithy/types': 4.19.0
       tslib: 2.8.1
@@ -13350,7 +13354,7 @@ snapshots:
       '@aws-sdk/util-user-agent-browser': 3.910.0
       '@aws-sdk/util-user-agent-node': 3.911.0
       '@smithy/config-resolver': 4.7.2
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/hash-node': 4.5.2
       '@smithy/invalid-dependency': 4.5.2
@@ -15977,7 +15981,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@mongodb-js/saslprep@1.5.4':
+  '@mongodb-js/saslprep@1.5.5':
     dependencies:
       sparse-bitfield: 3.0.3
     optional: true
@@ -18729,11 +18733,11 @@ snapshots:
 
   '@smithy/config-resolver@4.7.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
-  '@smithy/core@3.35.0':
+  '@smithy/core@3.35.1':
     dependencies:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
@@ -18748,20 +18752,20 @@ snapshots:
 
   '@smithy/fetch-http-handler@5.8.0':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/types': 4.19.0
       tslib: 2.8.1
     optional: true
 
   '@smithy/hash-node@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/invalid-dependency@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
@@ -18775,75 +18779,75 @@ snapshots:
 
   '@smithy/middleware-content-length@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/middleware-endpoint@4.7.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/middleware-retry@4.8.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/middleware-serde@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/middleware-stack@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/node-config-provider@4.6.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/node-http-handler@4.12.1':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/types': 4.19.0
       tslib: 2.8.1
     optional: true
 
   '@smithy/property-provider@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/protocol-http@5.6.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/shared-ini-file-loader@4.7.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/signature-v4@5.7.4':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/types': 4.19.0
       tslib: 2.8.1
     optional: true
 
   '@smithy/smithy-client@4.15.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/types': 4.19.0
       tslib: 2.8.1
     optional: true
@@ -18859,25 +18863,25 @@ snapshots:
 
   '@smithy/url-parser@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-base64@4.6.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-body-length-browser@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-body-length-node@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
@@ -18893,25 +18897,25 @@ snapshots:
 
   '@smithy/util-config-provider@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-defaults-mode-browser@4.6.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-defaults-mode-node@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-endpoints@3.7.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
@@ -18921,13 +18925,13 @@ snapshots:
 
   '@smithy/util-middleware@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
   '@smithy/util-retry@4.6.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
@@ -18943,7 +18947,7 @@ snapshots:
 
   '@smithy/util-utf8@4.5.2':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
     optional: true
 
@@ -19794,7 +19798,7 @@ snapshots:
       '@vue/shared': 3.5.20
       entities: 4.5.0
       estree-walker: 2.0.2
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
     optional: true
 
   '@vue/compiler-dom@3.5.20':
@@ -19813,7 +19817,7 @@ snapshots:
       estree-walker: 2.0.2
       magic-string: 0.30.21
       postcss: 8.5.14
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
     optional: true
 
   '@vue/compiler-ssr@3.5.20':
@@ -21125,7 +21129,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  enhanced-resolve@5.25.1:
+  enhanced-resolve@5.26.0:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -23438,7 +23442,7 @@ snapshots:
 
   mongodb@7.1.0(gcp-metadata@7.0.1)(socks@2.8.7):
     dependencies:
-      '@mongodb-js/saslprep': 1.5.4
+      '@mongodb-js/saslprep': 1.5.5
       bson: 7.3.3
       mongodb-connection-string-url: 7.0.2
     optionalDependencies:
@@ -23645,7 +23649,7 @@ snapshots:
     dependencies:
       asn1: 0.2.6
 
-  nodemailer@9.1.1: {}
+  nodemailer@10.0.9: {}
 
   non-error@0.1.0: {}
 
@@ -25375,6 +25379,9 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
+  source-map-js@1.2.2:
+    optional: true
+
   source-map-support@0.5.21:
     dependencies:
       buffer-from: 1.1.2
@@ -26381,7 +26388,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.18.0)
       browserslist: 4.29.1
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.25.1
+      enhanced-resolve: 5.26.0
       es-module-lexer: 2.3.2
       eslint-scope: 5.1.1
       events: 3.3.0
