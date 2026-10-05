@@ -8,7 +8,7 @@
   "dependencies": {
     "@react-email/components": "1.0.12",
     "@react-email/render": "2.1.0",
-    "nanoid": "5.1.16",
+    "nanoid": "6.0.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-email": "6.11.0",
