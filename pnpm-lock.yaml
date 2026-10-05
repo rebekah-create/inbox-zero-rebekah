@@ -762,8 +762,8 @@ importers:
   packages/loops:
     dependencies:
       loops:
-        specifier: ^6.3.0
-        version: 6.3.0
+        specifier: ^7.3.0
+        version: 7.3.0
     devDependencies:
       '@types/node':
         specifier: 24.10.1
@@ -9592,8 +9592,8 @@ packages:
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
-  loops@6.3.0:
-    resolution: {integrity: sha512-T5oc66bM90LS+yHxTv9WoYtsadJC94QIax25Avl/XCq/DTonqtNd3g1nmOfuAqDKhkZzXE8GuXmSRvSFIgq0Xg==}
+  loops@7.3.0:
+    resolution: {integrity: sha512-9IqNv/xIFt2v7hUhtbn0qMadA3F+zzL7ot5XZxDesD0SyCQYX3paKhZdgAadIImPQCG5Sx4iVPL/+0CG4DsCGA==}
     engines: {node: '>=18'}
 
   loose-envify@1.4.0:
@@ -22791,7 +22791,7 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  loops@6.3.0: {}
+  loops@7.3.0: {}
 
   loose-envify@1.4.0:
     dependencies:
