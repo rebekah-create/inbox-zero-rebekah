@@ -600,8 +600,8 @@ importers:
         specifier: 7.4.16
         version: 7.4.16
       undici:
-        specifier: 8.12.0
-        version: 8.12.0
+        specifier: 8.12.1
+        version: 8.12.1
       unpdf:
         specifier: 1.8.1
         version: 1.8.1
@@ -12127,8 +12127,8 @@ packages:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.12.0:
-    resolution: {integrity: sha512-Mhxs/BNT9Kal1Hi/Qjzv5mUJI/QM1urF9/PUIN7Dgode0EqXgKkvx6JCeDp6jDNAIEtccQ6lx5Ncjj4IItwvaA==}
+  undici@8.12.1:
+    resolution: {integrity: sha512-usz3OVQBeh1LxNn0DzU0voLXMgn5CU/WUdpBsY6Ti5afNao+vTkmn4H/NxoXolc10cOqe2+YIG0Hspq2rsl64w==}
     engines: {node: '>=22.19.0'}
 
   unenv@2.0.0-rc.24:
@@ -25909,7 +25909,7 @@ snapshots:
 
   undici@7.29.0: {}
 
-  undici@8.12.0: {}
+  undici@8.12.1: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
