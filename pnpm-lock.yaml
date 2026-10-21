@@ -784,8 +784,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       nanoid:
-        specifier: 5.1.16
-        version: 5.1.16
+        specifier: 6.0.2
+        version: 6.0.2
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -8922,10 +8922,6 @@ packages:
     resolution: {integrity: sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==}
     engines: {node: '>= 12'}
 
-  ip-address@10.7.4:
-    resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
-    engines: {node: '>= 12'}
-
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
@@ -9948,6 +9944,11 @@ packages:
   nanoid@5.1.16:
     resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
+    hasBin: true
+
+  nanoid@6.0.2:
+    resolution: {integrity: sha512-hIvVOb9Qr1p/9CNNLOe0OlWvgx/ziTsVwKN/GDSsuArN2K0wDiafP3s0SWmsm7o2BdnyS8Z9Z64NFBUbn6ziBg==}
+    engines: {node: ^22 || ^24 || >=26}
     hasBin: true
 
   nanostores@1.5.4:
@@ -22028,9 +22029,6 @@ snapshots:
 
   ip-address@10.7.3: {}
 
-  ip-address@10.7.4:
-    optional: true
-
   ipaddr.js@1.9.1: {}
 
   ipaddr.js@2.5.0: {}
@@ -23384,6 +23382,8 @@ snapshots:
   nanoid@3.3.12: {}
 
   nanoid@5.1.16: {}
+
+  nanoid@6.0.2: {}
 
   nanostores@1.5.4: {}
 
@@ -25263,7 +25263,7 @@ snapshots:
 
   socks@2.8.7:
     dependencies:
-      ip-address: 10.7.4
+      ip-address: 10.7.3
       smart-buffer: 4.2.0
     optional: true
 
