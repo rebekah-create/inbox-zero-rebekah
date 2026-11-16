@@ -27,13 +27,11 @@ import { SCOPES as GMAIL_SCOPES } from "@/utils/gmail/scopes";
 import {
   fetchGoogleOpenIdProfile,
   getGoogleOauthDiscoveryUrl,
-  getGoogleOauthIssuer,
   isGoogleOauthEmulationEnabled,
 } from "@/utils/google/oauth";
 import { createScopedLogger } from "@/utils/logger";
 import {
   getMicrosoftOauthDiscoveryUrl,
-  getMicrosoftOauthIssuer,
   isMicrosoftEmulationEnabled,
 } from "@/utils/microsoft/oauth";
 import { createOutlookClient } from "@/utils/outlook/client";
@@ -183,7 +181,6 @@ const genericOauthConfig: GenericOAuthConfig[] = [
         {
           providerId: "google",
           discoveryUrl: getGoogleOauthDiscoveryUrl(),
-          issuer: getGoogleOauthIssuer(),
           clientId: env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
           scopes: [...GMAIL_SCOPES],
@@ -201,7 +198,6 @@ const genericOauthConfig: GenericOAuthConfig[] = [
         {
           providerId: "microsoft",
           discoveryUrl: getMicrosoftOauthDiscoveryUrl(),
-          issuer: getMicrosoftOauthIssuer(),
           clientId: env.MICROSOFT_CLIENT_ID!,
           clientSecret: env.MICROSOFT_CLIENT_SECRET!,
           scopes: [...OUTLOOK_SCOPES],
