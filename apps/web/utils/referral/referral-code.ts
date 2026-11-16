@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomInt } from "node:crypto";
 import prisma from "@/utils/prisma";
 import { SafeError } from "@/utils/error";
 import { isDuplicateError } from "@/utils/prisma-helpers";
@@ -9,10 +9,8 @@ import { ReferralStatus } from "@/generated/prisma/enums";
  */
 function generateRandomString(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const bytes = randomBytes(length);
-  return Array.from(bytes)
-    .map((byte) => chars[byte % chars.length])
-    .join("");
+  // randomInt is unbiased; `byte % chars.length` over-weights the first chars.
+  return Array.from({ length }, () => chars[randomInt(chars.length)]).join("");
 }
 
 /**
