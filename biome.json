@@ -24,6 +24,8 @@
         "useConsistentTypeDefinitions": "off"
       },
       "suspicious": {
+        "noShadow": "off",
+        "noUnnecessaryConditions": "off",
         "noConsole": "warn",
         "noExplicitAny": "warn",
         "noArrayIndexKey": "off",
@@ -45,9 +47,7 @@
         "useArrowFunction": "off"
       },
       "nursery": {
-        "useSortedClasses": "off",
-        "noShadow": "off",
-        "noUnnecessaryConditions": "off"
+        "useSortedClasses": "off"
       },
       "performance": {
         "useTopLevelRegex": "off",

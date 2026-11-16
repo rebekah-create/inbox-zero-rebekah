@@ -16,12 +16,12 @@ minimumReleaseAgeExclude:
 overrides:
   "@hono/node-server": "1.19.14"
   "@tiptap/core": "2.27.2"
-  "@types/react": "19.2.14"
-  "@types/react-dom": "19.2.3"
+  "@types/react": "19.3.0"
+  "@types/react-dom": "19.3.0"
   "@xmldom/xmldom": "0.8.13"
   axios: "1.16.1"
   fast-uri: "3.1.2"          # ours: path-traversal/host-confusion (via ajv → MCP SDK / prisma)
-  fast-xml-parser: "5.8.0"
+  fast-xml-parser: "5.12.0"
   js-yaml: "3.14.2"
   jws: "4.0.1"
   kysely: "0.28.17"          # ours: JSON-path injection (via better-auth)
@@ -33,12 +33,11 @@ overrides:
   # (#91/#92/#95/#96/#97) were silently clamped back on install, so the shipped
   # app stayed on 16.2.6 with the 16.2.11 advisories open.
   #
-  # Deliberately 16.2.11 and NOT upstream's 16.3.0: 16.3.0 has an intermittent
-  # Turbopack failure evaluating postcss.config.js ("__turbopack_context__.a is
-  # not a function"), which broke roughly half of all builds on both x64 CI and
-  # arm64 Docker. 16.2.11 is the highest version any next advisory requires, so
-  # this gives up nothing on security. Revisit 16.3.x once that is fixed.
-  next: "16.2.11"
+  # Never 16.3.x: 16.3.0 had an intermittent Turbopack failure evaluating
+  # postcss.config.js ("__turbopack_context__.a is not a function") that broke
+  # roughly half of all builds on x64 CI and arm64 Docker. 16.4.x is allowed
+  # (upstream builds on 16.4.5). Moved 16.2.11 -> 16.4.5 on 2026-11-16.
+  next: "16.4.5"
   postcss: "8.5.14"
   protobufjs: "7.5.6"        # ours: proto-pollution / code-gen (via posthog + google-genai telemetry)
   svelte: "5.55.5"
