@@ -122,5 +122,28 @@ ${email.bodyTruncated}
     ? Math.min(1, Math.max(0, rawConfidence))
     : 0;
 
-  return { ...result.object, confidence };
+  // Normalize the date strings. Haiku 5.5 sometimes emits the literal two-char
+  // string `""` (or other unparseable text) instead of an empty string for
+  // "no event", which made `new Date(startISO)` an Invalid Date and crashed the
+  // ledger insert. Anything unparseable becomes "" / null, so the orchestrator's
+  // empty-startISO guard handles it as a clean FAILED row.
+  const startISO = normalizeISO(result.object.startISO) ?? "";
+  const endISO = normalizeISO(result.object.endISO);
+  const title = stripWrappingQuotes(result.object.title);
+
+  return { ...result.object, title, startISO, endISO, confidence };
+}
+
+function stripWrappingQuotes(value: string): string {
+  return value
+    .trim()
+    .replace(/^"+|"+$/g, "")
+    .trim();
+}
+
+function normalizeISO(value: string | null): string | null {
+  if (value == null) return null;
+  const cleaned = stripWrappingQuotes(value);
+  if (!cleaned || Number.isNaN(Date.parse(cleaned))) return null;
+  return cleaned;
 }
