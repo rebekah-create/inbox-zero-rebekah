@@ -2270,7 +2270,9 @@ async function extractImagePartsFromMessage({
           ? attachment.data
           : Buffer.from(await new Response(attachment.data).arrayBuffer());
       } else if (attachment.fetchData) {
-        buffer = await attachment.fetchData();
+        // chat SDK now types fetchData() as ArrayBuffer | Buffer
+        const fetched = await attachment.fetchData();
+        buffer = Buffer.isBuffer(fetched) ? fetched : Buffer.from(fetched);
       } else if (attachment.url) {
         const response = await fetch(attachment.url, {
           signal: AbortSignal.timeout(15_000),

@@ -1,29 +1,102 @@
 name: dependabot-auto-merge
 
+# Merges Dependabot minor/patch PRs ONLY after the real build and test checks
+# pass on the PR's head commit.
+#
+# Why this exists (2026-11-16): the previous version called
+# `gh pr merge --auto`, but main has no branch protection / required checks, so
+# "--auto" merged immediately. From 2026-09-28 to 2026-11-12 about 25 Dependabot
+# PRs merged with "Build Check / build" FAILING, and main could not build or
+# deploy until it was fixed by hand. This workflow now waits for the checks
+# itself instead of relying on branch protection (a required check that is
+# path-filtered out never reports, which would block unrelated PRs forever).
+#
+# Rules:
+#   - "Run Tests / test" must succeed.
+#   - "security / pnpm overrides (no silent downgrades)" must succeed — it is
+#     what catches a manifest bump that a pnpm override silently clamps back.
+#   - "Build Check / build" must succeed whenever it runs; it is path-filtered,
+#     so if the PR touches none of its paths it may never appear â€” that is OK
+#     only once Run Tests has finished.
+#   - Any failure, cancellation, or a 90-minute timeout leaves the PR open with
+#     a comment for manual review. Nothing is merged on doubt.
+#   - Major bumps are never auto-merged.
+
 on: pull_request_target
 
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   auto-merge:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 100
     steps:
       - id: meta
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a  # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for minor/patch updates
+      - name: Wait for build + tests, then merge minor/patch updates
         if: |
           steps.meta.outputs.update-type == 'version-update:semver-minor' ||
           steps.meta.outputs.update-type == 'version-update:semver-patch'
-        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # status of a named check run on the PR head: "missing", "pending",
+          # or its conclusion ("success", "failure", "cancelled", ...)
+          check_state() {
+            gh api "repos/$REPO/commits/$HEAD_SHA/check-runs?per_page=100" \
+              --jq "[.check_runs[] | select(.name == \"$1\")] | sort_by(.started_at) | last
+                    | if . == null then \"missing\"
+                      elif .status != \"completed\" then \"pending\"
+                      else .conclusion end"
+          }
+
+          deadline=$(( $(date +%s) + 90*60 ))
+          while :; do
+            test_state=$(check_state "test")
+            build_state=$(check_state "build")
+            guard_state=$(check_state "pnpm overrides (no silent downgrades)")
+            echo "$(date -u +%H:%M:%S) test=$test_state build=$build_state overrides=$guard_state"
+
+            for s in "$test_state" "$build_state" "$guard_state"; do
+              case "$s" in
+                failure|cancelled|timed_out|action_required|stale)
+                  gh pr comment "$PR_URL" --body "Not auto-merged: a required check ended as \`$s\` (test=$test_state, build=$build_state, overrides=$guard_state). Needs manual review."
+                  exit 0 ;;
+              esac
+            done
+
+            if [ "$test_state" = "success" ] && [ "$guard_state" = "success" ] && { [ "$build_state" = "success" ] || [ "$build_state" = "skipped" ] || [ "$build_state" = "neutral" ]; }; then
+              break
+            fi
+            # Build Check is path-filtered. If tests are done and build has
+            # still not appeared, give it 5 more minutes to be queued, then
+            # accept that it does not apply to this PR.
+            if [ "$test_state" = "success" ] && [ "$guard_state" = "success" ] && [ "$build_state" = "missing" ]; then
+              sleep 300
+              [ "$(check_state build)" = "missing" ] && break
+              continue
+            fi
+
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              gh pr comment "$PR_URL" --body "Not auto-merged: checks did not finish within 90 minutes (test=$test_state, build=$build_state, overrides=$guard_state). Needs manual review."
+              exit 0
+            fi
+            sleep 60
+          done
+
+          gh pr merge --squash "$PR_URL"
 
       - name: Comment on major updates (manual review required)
         if: steps.meta.outputs.update-type == 'version-update:semver-major'

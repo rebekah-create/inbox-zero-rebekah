@@ -1,5 +1,10 @@
 module.exports = {
   reject: [
+    // Lint tooling: biome 2.5 / ultracite 7.12 move rules between groups and
+    // change preset paths + defaults (15k new errors). Upgrade deliberately.
+    "@biomejs/biome",
+    "ultracite",
+
     // >=27.4.0 has ESM/CJS incompatibility that breaks Vercel runtime
     "jsdom",
 

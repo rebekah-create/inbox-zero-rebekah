@@ -1,10 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { env } from "@/env";
 import { ssoClient } from "@better-auth/sso/client";
-import {
-  genericOAuthClient,
-  organizationClient,
-} from "better-auth/client/plugins";
+import { organizationClient } from "better-auth/client/plugins";
 
 export const { signIn, signOut, signUp, useSession, getSession, sso } =
   createAuthClient({
@@ -12,18 +9,23 @@ export const { signIn, signOut, signUp, useSession, getSession, sso } =
     plugins: [ssoClient(), organizationClient()],
   });
 
-function createGenericOauthAuthClient() {
-  return createAuthClient({
-    baseURL: env.NEXT_PUBLIC_BASE_URL,
-    plugins: [genericOAuthClient()],
-  });
-}
+// better-auth >=1.7.7 no longer exports `genericOAuthClient` from
+// "better-auth/client/plugins", so the options type is declared here instead
+// of being derived from that client. The request itself is unchanged: it still
+// posts to the server-side generic-oauth plugin's /sign-in/oauth2 endpoint,
+// which is only used by the Google/Microsoft OAuth emulator (dev/test).
+// Production Google login uses `signIn.social`.
+type SignInWithOauth2Options = {
+  providerId: string;
+  callbackURL?: string;
+  errorCallbackURL?: string;
+  newUserCallbackURL?: string;
+  disableRedirect?: boolean;
+  scopes?: string[];
+  requestSignUp?: boolean;
+};
 
-export async function signInWithOauth2(
-  options: Parameters<
-    ReturnType<typeof createGenericOauthAuthClient>["signIn"]["oauth2"]
-  >[0],
-) {
+export async function signInWithOauth2(options: SignInWithOauth2Options) {
   const response = await fetch("/api/auth/sign-in/oauth2", {
     method: "POST",
     headers: {
