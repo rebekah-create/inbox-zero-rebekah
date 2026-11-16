@@ -99,10 +99,33 @@ The app uses **Better Auth** (not NextAuth, despite `NEXTAUTH_SECRET` env var na
 
 ## LLM provider
 
-`DEFAULT_LLM_PROVIDER=anthropic` in this fork. Model tiers are configured via env vars:
-- `DEFAULT_LLM_*` — primary model (claude-sonnet-4-6)
-- `ECONOMY_LLM_*` — cheaper model for bulk/less critical tasks
-- `NANO_LLM_*` — cheapest, for high-voltage low-stakes tasks
+**`DEFAULT_LLM_PROVIDER=openrouter`** as of 2026-08-14. The fork ran on Anthropic
+direct until its prepaid credits ran out; it now routes through existing prepaid
+OpenRouter balance instead. All three tiers point at OpenRouter:
+
+| Tier | Model | Used for |
+|---|---|---|
+| `DEFAULT_LLM_*` | `~anthropic/claude-sonnet-latest` | complex work — digest narrative, escalations |
+| `ECONOMY_LLM_*` | `openai/gpt-5.6-luna` | bulk / less critical |
+| `NANO_LLM_*` | `openai/gpt-5.6-luna` | cheapest, high-volume low-stakes |
+
+The leading `~` on the Anthropic model is OpenRouter's "latest" alias syntax — it
+auto-tracks the newest Sonnet, so the model name does not go stale the way a
+pinned `claude-sonnet-4-6` would.
+
+These are set in AWS Parameter Store under `/inbox-zero/`, not in the repo, so
+changing a model means updating SSM and redeploying — not editing code. Verify
+what is actually live with `docker exec inbox-zero-app printenv | grep LLM`
+rather than trusting this table.
+
+`ANTHROPIC_API_KEY` is still present in the environment but unused while the
+provider is `openrouter`. It has no credits; do not switch a tier back to
+`anthropic` expecting it to work.
+
+**Cost:** OpenRouter reports per-key spend at `GET /api/v1/key` (run it from the
+box so the key stays there). First measurements: ~$0.0002 per AI classification,
+with only ~3 of 42 rule executions in a day needing AI at all — the rest resolve
+via static or learned matches. Treat that as directional, not a budget.
 
 **Important:** Do not run bulk email processing through the Inbox Zero UI — it processes emails through the LLM and costs ~$1.50/minute on a large backlog. Use Gmail search operators directly for bulk operations.
 
@@ -137,13 +160,18 @@ This project uses [GSD](https://github.com/get-shit-done-cc/gsd) for planning an
 **Phase sequence:**
 1. Ops Fixes (OPS-01–04) — fix broken digest sender, lock signups, CI/CD
 2. Inbox Zero Recon (RECON-01–06) — audit fork before building on it
-3. Classification Engine (CLASS-01–08) — three-tier rules → Haiku → Sonnet
+3. Classification Engine (CLASS-01–08) — three-tier rules → cheap model → Sonnet
 4. Daily Digest (DIGEST-01–07) — 6-7am email with feedback links
 5. Rules Management UI (RULES-01–06) — inbox.tdfurn.com/rules
 6. Feedback System (FEEDBACK-01–06) — signals feeding back into classification
 7. Backlog Triage (BACKLOG-01–05) — 100k email backlog with batch approval
 
-**Core constraint:** AI cost ≤ $10/mo additional. Three-tier architecture is non-negotiable — rules (free) → Haiku (~$1-2/mo) → Sonnet sparingly (digest narrative + true escalations only).
+**Core constraint:** AI cost ≤ $10/mo additional. The three-tier architecture is
+non-negotiable — rules (free) → cheap model (~$1-2/mo) → Sonnet sparingly (digest
+narrative + true escalations only). The *tiers* are the constraint, not the model
+names: the cheap tier was Claude Haiku when this was written and is now
+`openai/gpt-5.6-luna` via OpenRouter. See the LLM provider section for what is
+currently wired up.
 
 **To continue work:**
 ```bash
