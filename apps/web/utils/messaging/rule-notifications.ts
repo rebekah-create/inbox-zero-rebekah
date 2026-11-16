@@ -2182,12 +2182,15 @@ function toCalendarPreviewMessage(
 }
 
 function stripSlackFormatting(text: string) {
-  return text
-    .replace(/<([^|>]+)\|([^>]+)>/g, "$2: $1")
-    .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+  return (
+    text
+      .replace(/<([^|>]+)\|([^>]+)>/g, "$2: $1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      // Decode &amp; last, so "&amp;lt;" stays "&lt;" instead of becoming "<".
+      .replace(/&amp;/g, "&")
+  );
 }
 
 function getLinkedProviderLimitationText({

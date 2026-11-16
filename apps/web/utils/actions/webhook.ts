@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "node:crypto";
 import prisma from "@/utils/prisma";
 import { actionClientUser } from "@/utils/actions/safe-action";
 import { ensureWebhookActionEnabled } from "@/utils/webhook-action";
@@ -22,7 +23,6 @@ export const regenerateWebhookSecretAction = actionClientUser
 function generateWebhookSecret(length = 32) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from(crypto.getRandomValues(new Uint8Array(length)))
-    .map((x) => chars[x % chars.length])
-    .join("");
+  // randomInt is unbiased; `byte % chars.length` over-weights the first chars.
+  return Array.from({ length }, () => chars[randomInt(chars.length)]).join("");
 }

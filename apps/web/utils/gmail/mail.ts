@@ -123,13 +123,8 @@ export async function sendEmailWithHtml(
     messageText = convertEmailHtmlToText({ htmlText: body.messageHtml });
   } catch (error) {
     logger.error("Error converting email html to text", { error });
-    // Strip HTML tags as a fallback
-    // Keep new lines
-    messageText = body.messageHtml
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/p>/gi, "\n")
-      .replace(/<[^>]*>/g, "")
-      .trim();
+    // Strip HTML tags as a fallback, keeping new lines
+    messageText = stripTagsToText(body.messageHtml);
   }
 
   const raw = await createRawMailMessage({ ...body, messageText });
@@ -393,4 +388,16 @@ function renderReplyBodyAsPlainText(textContent?: string) {
     .replace(/\r\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+// Fallback HTML -> text for the plain-text MIME part (never rendered as HTML).
+// Strips repeatedly so nested input like "<<b>script>" cannot leave a tag.
+function stripTagsToText(html: string) {
+  let text = html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n");
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, "");
+  } while (text !== previous);
+  return text.trim();
 }
