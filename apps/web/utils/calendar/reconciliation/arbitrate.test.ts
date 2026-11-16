@@ -338,7 +338,7 @@ describe("arbitrateOverlap", () => {
     expect(typeof call.system).toBe("string");
   });
 
-  it("passes temperature: 0 and maxOutputTokens: 100 to the model call", async () => {
+  it("passes maxOutputTokens: 1000 and no temperature to the model call", async () => {
     mockGenerateObject.mockResolvedValueOnce({
       object: { verdict: "SKIP", matchedEventId: null },
     });
@@ -352,7 +352,10 @@ describe("arbitrateOverlap", () => {
     });
 
     expect(mockGenerateObject).toHaveBeenCalledWith(
-      expect.objectContaining({ temperature: 0, maxOutputTokens: 100 }),
+      expect.objectContaining({ maxOutputTokens: 1000 }),
+    );
+    expect(mockGenerateObject.mock.calls[0][0]).not.toHaveProperty(
+      "temperature",
     );
   });
 });

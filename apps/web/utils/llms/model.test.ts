@@ -541,6 +541,22 @@ describe("Models", () => {
       expect(result.model).toBeDefined();
     });
 
+    it("sets low effort for Claude 5.x Anthropic models only", () => {
+      const haiku55 = getModel({
+        aiApiKey: "user-api-key",
+        aiProvider: Provider.ANTHROPIC,
+        aiModel: "claude-haiku-5-5",
+      });
+      expect(haiku55.providerOptions).toEqual({ anthropic: { effort: "low" } });
+
+      const sonnet37 = getModel({
+        aiApiKey: "user-api-key",
+        aiProvider: Provider.ANTHROPIC,
+        aiModel: "claude-3-7-sonnet-20250219",
+      });
+      expect(sonnet37.providerOptions).toBeUndefined();
+    });
+
     it("should configure Bedrock model correctly via env vars", () => {
       const userAi: UserAIFields = {
         aiApiKey: null,

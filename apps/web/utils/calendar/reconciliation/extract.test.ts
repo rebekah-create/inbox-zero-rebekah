@@ -191,7 +191,7 @@ describe("extractCandidateEvent", () => {
     );
   });
 
-  it("passes temperature: 0 and maxOutputTokens: 400 to generateObject", async () => {
+  it("passes maxOutputTokens: 1500 and no temperature to generateObject", async () => {
     setupModel("anthropic");
     await extractCandidateEvent({
       email,
@@ -199,7 +199,10 @@ describe("extractCandidateEvent", () => {
       logger: makeMockLogger(),
     });
     expect(mockGenerateObject).toHaveBeenCalledWith(
-      expect.objectContaining({ temperature: 0, maxOutputTokens: 400 }),
+      expect.objectContaining({ maxOutputTokens: 1500 }),
+    );
+    expect(mockGenerateObject.mock.calls[0][0]).not.toHaveProperty(
+      "temperature",
     );
   });
 

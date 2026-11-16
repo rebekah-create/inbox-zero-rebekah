@@ -310,7 +310,13 @@ function selectModel(
         model: createAnthropic({
           apiKey: resolveApiKey(aiApiKey, env.ANTHROPIC_API_KEY),
         })(modelName),
-        // Note: Anthropic thinking is disabled by default (not including the config)
+        // Claude 5.x models think by default (adaptive), and thinking tokens
+        // count toward maxOutputTokens. Keep effort low: these are short
+        // classification / extraction calls, and low effort lets the model skip
+        // thinking on simple inputs. Older (4.x) models are left untouched.
+        providerOptions: isClaude5Model(modelName)
+          ? { anthropic: { effort: "low" } }
+          : undefined,
       };
     }
     default: {
@@ -843,4 +849,8 @@ function parseFallbackConfig(
 
 function isSupportedProvider(provider: string): boolean {
   return Object.values(Provider).includes(provider);
+}
+
+function isClaude5Model(modelName: string) {
+  return /claude-(haiku|sonnet|opus|fable)-5/.test(modelName);
 }

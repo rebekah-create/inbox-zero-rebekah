@@ -70,7 +70,9 @@ export type CandidateEvent = z.infer<typeof candidateEventSchema>;
  *   of content, not nested in a content-part array — Phase 8.5 pattern).
  * - User prompt wraps `email.bodyTruncated` in `<email_body_untrusted>` tags
  *   (D-04) and threads `promptHardening: { trust: "untrusted", level: "full" }`.
- * - `temperature: 0`, `maxOutputTokens: 400` set explicitly (T-09-04 cost cap).
+ * - `maxOutputTokens: 1500` set explicitly (T-09-04 cost cap). No `temperature`:
+ *   Claude 5.x models reject non-default sampling params, and the cap leaves
+ *   room for adaptive thinking, which counts toward it.
  * - Body is assumed already capped at 2000 chars by the orchestrator (D-05).
  *
  * The `_logger` parameter is accepted for API symmetry with neighbouring helpers
@@ -109,8 +111,7 @@ ${email.bodyTruncated}
     system,
     prompt,
     schema: candidateEventSchema,
-    temperature: 0,
-    maxOutputTokens: 400,
+    maxOutputTokens: 1500,
   });
 
   // Clamp confidence to [0, 1]. The model is asked for that range via the
