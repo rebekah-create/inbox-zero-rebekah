@@ -512,8 +512,8 @@ importers:
         specifier: 0.4.6
         version: 0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       nodemailer:
-        specifier: 10.5.0
-        version: 10.5.0
+        specifier: 10.6.0
+        version: 10.6.0
       nuqs:
         specifier: 2.10.1
         version: 2.10.1(next@16.4.5(@babel/core@7.29.7)(@opentelemetry/api@1.10.0)(@playwright/test@1.64.0)(@types/node@24.10.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
@@ -7860,8 +7860,8 @@ packages:
     resolution: {integrity: sha512-z34mGpLoY/82ZbkX1LqGMIaf3wjVMPL6gVC681QDqnmzJ26synI8qAE32P+a7UazmpJZ8UGrFIeAavgRfXzYrg==}
     engines: {node: '>=10.2.0'}
 
-  enhanced-resolve@5.26.1:
-    resolution: {integrity: sha512-PPnnSJq3azKOIewXR/uppBV/6h98dprBJ/WaQ9Qgj10xX1lJLNfg+XShpbsrSqcDSy2yYYyhfXM1wWhftqgyzw==}
+  enhanced-resolve@5.27.0:
+    resolution: {integrity: sha512-Do6BB2xzlcc/odFg+XEYyneAx4T/WfywO71yw9ePS2tVfRsf7JVR4mUeELadIeHzixkzbG5DpluiEFPi2WGfYQ==}
     engines: {node: '>=10.13.0'}
 
   entities@4.5.0:
@@ -8401,6 +8401,9 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
+  graceful-fs@4.2.12:
+    resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
 
   grammex@3.1.13:
     resolution: {integrity: sha512-LnPnhOBLEJEVKS8WFDVaA397L9Kq55Q9oSITJiVLHVdhAclfUkWzQv74KhvZHKL2Q09Pb1XdsrOsZ4LfTFFTEg==}
@@ -9780,8 +9783,8 @@ packages:
   node-rsa@1.1.1:
     resolution: {integrity: sha512-Jd4cvbJMryN21r5HgxQOpMEqv+ooke/korixNNK3mGqfGJmy0M77WDDzo/05969+OkMy3XW1UuZsSmW9KQm7Fw==}
 
-  nodemailer@10.5.0:
-    resolution: {integrity: sha512-L/w/HH5MqpzMDuZD7fQdt/+KqymuvrpaApaIjAH2XA3ILePwlcvXCVVvP75xVrXCEt2ggK2marrrHHFB5Qu0kA==}
+  nodemailer@10.6.0:
+    resolution: {integrity: sha512-jWanL7D9GD3jvUDYKmoC5rWTiG8MnBgnN2yV68bgMKip1zUJhiSTyz7Eg+18y8sk5OvdVDzws5nZK5arSI4f5Q==}
     engines: {node: '>=20.0.0'}
 
   non-error@0.1.0:
@@ -11453,8 +11456,8 @@ packages:
   tailwindcss@4.3.3:
     resolution: {integrity: sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==}
 
-  tapable@2.3.3:
-    resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
+  tapable@2.3.4:
+    resolution: {integrity: sha512-NHFiWnAbMJxNNpBwiO7jJVGDuqMxT9/oV8v57RR+fgBQShkJil5inGD8/xWy0hjLyHQyX1tu27QANhlz3KBqCg==}
     engines: {node: '>=6'}
 
   tar-fs@3.1.2:
@@ -20267,10 +20270,10 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  enhanced-resolve@5.26.1:
+  enhanced-resolve@5.27.0:
     dependencies:
-      graceful-fs: 4.2.11
-      tapable: 2.3.3
+      graceful-fs: 4.2.12
+      tapable: 2.3.4
 
   entities@4.5.0: {}
 
@@ -20989,6 +20992,8 @@ snapshots:
   graceful-fs@4.2.10: {}
 
   graceful-fs@4.2.11: {}
+
+  graceful-fs@4.2.12: {}
 
   grammex@3.1.13: {}
 
@@ -22762,7 +22767,7 @@ snapshots:
     dependencies:
       asn1: 0.2.6
 
-  nodemailer@10.5.0: {}
+  nodemailer@10.6.0: {}
 
   non-error@0.1.0: {}
 
@@ -24787,7 +24792,7 @@ snapshots:
 
   tailwindcss@4.3.3: {}
 
-  tapable@2.3.3: {}
+  tapable@2.3.4: {}
 
   tar-fs@3.1.2:
     dependencies:
@@ -25456,7 +25461,7 @@ snapshots:
 
   watchpack@2.6.4:
     dependencies:
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
 
   web-namespaces@2.0.1: {}
 
@@ -25490,17 +25495,17 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.19.0)
       browserslist: 4.28.7
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.26.1
+      enhanced-resolve: 5.27.0
       es-module-lexer: 2.3.2
       eslint-scope: 5.1.1
       events: 3.3.0
       glob-to-regexp: 0.4.1
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       loader-runner: 4.3.2
       mime-db: 1.54.0
       neo-async: 2.6.2
       schema-utils: 4.8.3(webpack@5.106.2(postcss@8.5.23))
-      tapable: 2.3.3
+      tapable: 2.3.4
       terser-webpack-plugin: 5.6.1(postcss@8.5.23)(webpack@5.106.2(postcss@8.5.23))
       watchpack: 2.6.4
       webpack-sources: 3.7.0
