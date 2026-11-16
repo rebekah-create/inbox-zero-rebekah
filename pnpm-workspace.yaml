@@ -14,7 +14,10 @@ minimumReleaseAgeExclude:
 # runtime. Build-only / unused-feature advisories (minimatch, rollup, samlify, etc.)
 # are intentionally NOT pinned — see the open Dependabot alerts for rationale.
 overrides:
-  "@hono/node-server": "1.19.18"
+  # MCP SDK accepts ^2.0.5; v2 fixes the serveStatic double-decode bypass.
+  # The dev-only OAuth emulator still needs ^1, so it keeps the patched 1.x.
+  "@modelcontextprotocol/sdk>@hono/node-server": "2.1.6"
+  "@inbox-zero/emulate>@hono/node-server": "1.19.18"
   "@tiptap/core": "2.27.2"
   "@types/react": "19.3.0"
   "@types/react-dom": "19.3.0"
@@ -62,7 +65,7 @@ overrides:
   follow-redirects: "1.16.2"
   "form-data@4": "4.0.6"
   hono: "4.13.16"
-  "langsmith@0.5": "0.5.19"     # 1 of 3 advisories needs 0.6 (major slice)
+  "langsmith@0.5": "0.6.3"      # all consumers accept ">=0.5.0 <1.0.0"
   "markdown-it@14": "14.3.3"
   "mdast-util-to-hast@13": "13.2.1"
   "mysql2@3": "3.23.1"
@@ -75,6 +78,16 @@ overrides:
   "uuid@11": "11.1.1"
   vue: "3.5.42"                 # optional peer (better-auth, @vercel/*); pulls matching @vue/*
   "ws@>=8 <8.21.0": "8.21.0"
+  # 2026-11-16 security sweep, slice 2: fixes that cross a major line. Each
+  # checked against its consumers; prefer bumping the parent where it already
+  # ships the fix.
+  "@microsoft/teams.apps": "2.2.1"   # via @chat-adapter/teams; 2.2 uses @azure/msal-node 7
+  "@sanity/uuid": "3.0.3"            # 3.0.3 depends on uuid ^11 (was ^8)
+  adm-zip: "0.6.1"                   # only consumer: @sanity/runtime-cli (CLI tooling)
+  "uuid@10": "11.1.1"                # langchain/langgraph/typeid: v4/v7/parse/stringify unchanged
+  # NOT overridden: glob 10/13 and minimatch 9/10 (fix needs glob 14 / minimatch 11,
+  # which remove makeRe()/Minimatch#regexp that consumers may call; medium DoS
+  # on crafted patterns only). @tiptap/core stays on 2.x (deliberate pin).
 
 # pnpm 10 blocks install scripts by default. Only packages listed here may run them.
 onlyBuiltDependencies:
