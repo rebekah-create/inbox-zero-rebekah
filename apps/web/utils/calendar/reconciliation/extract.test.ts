@@ -287,6 +287,54 @@ describe("extractCandidateEvent", () => {
     expect(out.confidence).toBe(0);
   });
 
+  it('normalizes a literal "" startISO/endISO/title to empty values', async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({
+      object: {
+        ...VALID_CANDIDATE,
+        title: '""',
+        startISO: '""',
+        endISO: '""',
+        confidence: 0,
+      },
+    });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.startISO).toBe("");
+    expect(out.endISO).toBeNull();
+    expect(out.title).toBe("");
+  });
+
+  it("turns unparseable startISO into empty string", async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({
+      object: { ...VALID_CANDIDATE, startISO: "not a date", endISO: "TBD" },
+    });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.startISO).toBe("");
+    expect(out.endISO).toBeNull();
+  });
+
+  it("keeps a valid startISO/endISO unchanged", async () => {
+    setupModel("anthropic");
+    mockGenerateObject.mockResolvedValueOnce({ object: VALID_CANDIDATE });
+    const out = await extractCandidateEvent({
+      email,
+      emailAccount: FAKE_EMAIL_ACCOUNT,
+      logger: makeMockLogger(),
+    });
+    expect(out.startISO).toBe(VALID_CANDIDATE.startISO);
+    expect(out.endISO).toBe(VALID_CANDIDATE.endISO);
+    expect(out.title).toBe(VALID_CANDIDATE.title);
+  });
+
   it("returns plain string system when provider is not anthropic", async () => {
     setupModel("openai");
     await extractCandidateEvent({
