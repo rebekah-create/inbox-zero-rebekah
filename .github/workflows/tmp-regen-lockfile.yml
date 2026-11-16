@@ -4,7 +4,7 @@ name: tmp-regen-lockfile
 
 on:
   push:
-    branches: [fix/build-after-dependabot]
+    branches: [fix/security-slice1-same-major]
     paths: [".github/workflows/tmp-regen-lockfile.yml"]
 
 permissions:
@@ -26,9 +26,9 @@ jobs:
       - name: Show resolved versions
         run: |
           grep -c "next@16.4.5" pnpm-lock.yaml || true
-          grep -c "next@16.2.11" pnpm-lock.yaml || true
+          grep -c "dompurify@3.4.17" pnpm-lock.yaml || true
           grep -c "better-auth@1.7.18" pnpm-lock.yaml || true
-          grep -c "better-auth@1.7.7" pnpm-lock.yaml || true
+          grep -c "axios@1.20.0" pnpm-lock.yaml || true
       - name: Commit lockfile
         run: |
           git config user.name "github-actions[bot]"
