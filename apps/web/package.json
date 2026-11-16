@@ -132,7 +132,7 @@
     "crisp-sdk-web": "1.2.1",
     "cronstrue": "3.27.0",
     "date-fns": "4.4.0",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "dub": "0.71.5",
     "easymde": "2.21.0",
     "email-reply-parser": "2.3.9",
@@ -157,7 +157,7 @@
     "next-axiom": "1.10.0",
     "next-safe-action": "8.7.3",
     "next-themes": "0.4.6",
-    "nodemailer": "9.1.1",
+    "nodemailer": "10.1.4",
     "nuqs": "2.10.1",
     "ollama-ai-provider-v2": "3.5.0",
     "openai": "6.34.0",
@@ -199,7 +199,7 @@
     "unpdf": "1.8.1",
     "use-stick-to-bottom": "1.1.6",
     "usehooks-ts": "3.1.1",
-    "zod": "4.2.1"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@headlessui/tailwindcss": "0.2.2",
