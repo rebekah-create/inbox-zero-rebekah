@@ -85,6 +85,9 @@ overrides:
   "@sanity/uuid": "3.0.3"            # 3.0.3 depends on uuid ^11 (was ^8)
   adm-zip: "0.6.1"                   # only consumer: @sanity/runtime-cli (CLI tooling)
   "uuid@10": "11.1.1"                # langchain/langgraph/typeid: v4/v7/parse/stringify unchanged
+  # 2026-11-16 security sweep, slice 4 (Dependabot):
+  "zod@4": "4.6.7"                  # memory-exhaustion DoS fixed in 4.6.6; keep in lockstep with manifests
+  "json-2-csv@5": "5.5.11"          # CSV injection; only consumer @sanity/vision
   # NOT overridden: glob 10/13 and minimatch 9/10 (fix needs glob 14 / minimatch 11,
   # which remove makeRe()/Minimatch#regexp that consumers may call; medium DoS
   # on crafted patterns only). @tiptap/core stays on 2.x (deliberate pin).

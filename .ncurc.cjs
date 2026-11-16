@@ -33,7 +33,7 @@ module.exports = {
     // v9+ breaks the shadcn/ui date picker component
     "react-day-picker",
 
-    // v4 has breaking changes with Tinybird and other integrations
+    // Stay on Zod 4.x (v5 untested with Tinybird/AI SDK); bump patch/minor by hand
     "zod",
 
     // v5 imports zod/v4/core; keep this pinned while the app stays on Zod 3
