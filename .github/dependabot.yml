@@ -39,6 +39,10 @@ updates:
         versions: ["16.3.x"]
       - dependency-name: "@next/*"
         versions: ["16.3.x"]
+      # Lint tooling: biome 2.5 / ultracite 7.12 change rule groups, preset
+      # paths and defaults (15k new lint errors on 2026-11-16). Upgrade by hand.
+      - dependency-name: "@biomejs/biome"
+      - dependency-name: "ultracite"
       # Staying on Tailwind v3 — v4 has significant breaking changes
       - dependency-name: "tailwindcss"
       - dependency-name: "@tailwindcss/forms"

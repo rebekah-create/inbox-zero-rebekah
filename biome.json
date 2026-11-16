@@ -24,8 +24,6 @@
         "useConsistentTypeDefinitions": "off"
       },
       "suspicious": {
-        "noShadow": "off",
-        "noUnnecessaryConditions": "off",
         "noConsole": "warn",
         "noExplicitAny": "warn",
         "noArrayIndexKey": "off",
@@ -47,7 +45,9 @@
         "useArrowFunction": "off"
       },
       "nursery": {
-        "useSortedClasses": "off"
+        "useSortedClasses": "off",
+        "noShadow": "off",
+        "noUnnecessaryConditions": "off"
       },
       "performance": {
         "useTopLevelRegex": "off",
@@ -143,5 +143,5 @@
       }
     }
   ],
-  "extends": ["ultracite/biome/core", "ultracite/biome/next"]
+  "extends": ["ultracite/core", "ultracite/next"]
 }

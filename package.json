@@ -19,7 +19,7 @@
     "docker:local:run": "./docker/scripts/run-local.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.4.12",
     "@clack/prompts": "1.8.1",
     "@turbo/gen": "2.11.7",
     "commander": "14.0.3",
@@ -28,7 +28,7 @@
     "tsconfig-paths": "4.2.0",
     "tsx": "4.23.15",
     "turbo": "2.11.7",
-    "ultracite": "7.12.4"
+    "ultracite": "7.6.0"
   },
   "packageManager": "pnpm@10.33.0",
   "lint-staged": {
