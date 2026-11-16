@@ -105,16 +105,19 @@ services:
   #   - /api/cron/automation-jobs   every 5m   (drives queued rule executions)
   #   - /api/cron/scheduled-actions every 5m   (delayed actions like archive-after-N-days)
   #   - /api/watch/all              every 6h   (renews Gmail PubSub watches before 7d expiry)
-  #   - /api/cron/digest            09:00 ET   (single-user fork: fixed time, not per-account Schedule)
   #
   # Endpoints intentionally NOT scheduled here:
+  #   - /api/cron/digest           — daily digest TURNED OFF 2026-11-15 (not being read).
+  #                                  The systemd inbox-zero-digest.timer on the host was
+  #                                  disabled the same day. To revive, restore the digest
+  #                                  loop from git history AND re-enable that timer.
   #   - /api/follow-up-reminders   — upstream feature, not in use in this fork
   #   - /api/meeting-briefs        — upstream feature, not in use in this fork
   #
   # NOTE: this fork's digest is heavily customized vs upstream — see
   # apps/web/utils/digest/run-daily-digest.ts and packages/resend/emails/.
   # The Schedule.nextOccurrenceAt / timeOfDay fields exist (upstream schema)
-  # but this fork ignores them and fires the digest once a day at 09:00 ET.
+  # but this fork ignores them (the digest is currently turned off — see above).
   # The UI selector for digest time is greyed out with a tooltip pointing here.
   #
   # Secret handling: CRON_SECRET is interpolated by docker compose from
@@ -151,27 +154,6 @@ services:
           while true; do
             curl -fsS -w '\n' -o - -H \"Authorization: Bearer $${CRON_SECRET}\" http://app:3000/api/watch/all || echo '[cron] watch/all failed'
             sleep 21600
-          done
-        ) &
-        (
-          # Digest tick: fire /api/cron/digest once a day at 09:00 ET. We bind
-          # /etc/localtime above so 'date +%H' is always ET regardless of how
-          # busybox cached the TZ env var at shell startup. Compute seconds
-          # until 09:00 ET from the current wall-clock hour/min/sec — robust
-          # across DST since the values come from the kernel's TZ-resolved clock.
-          while true; do
-            # Prefix with 1 then subtract 100 to dodge busybox $(()) parsing
-            # 08/09 as octal (POSIX-portable; '10#' is bash-only).
-            H=$$((1$$(date +%H) - 100))
-            M=$$((1$$(date +%M) - 100))
-            S=$$((1$$(date +%S) - 100))
-            now=$$((H*3600 + M*60 + S))
-            target=$$((9*3600))
-            sleep_for=$$((target - now))
-            [ $$sleep_for -le 0 ] && sleep_for=$$((sleep_for + 86400))
-            echo \"[cron] digest sleeping $${sleep_for}s until next 09:00 ET ($$(date))\"
-            sleep $$sleep_for
-            curl -fsS --max-time 360 -w '\n' -o - -H \"Authorization: Bearer $${CRON_SECRET}\" http://app:3000/api/cron/digest || echo '[cron] digest failed'
           done
         ) &
         wait
