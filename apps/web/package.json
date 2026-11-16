@@ -132,7 +132,7 @@
     "crisp-sdk-web": "1.2.1",
     "cronstrue": "3.27.0",
     "date-fns": "4.4.0",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "dub": "0.71.5",
     "easymde": "2.21.0",
     "email-reply-parser": "2.3.9",
@@ -232,7 +232,7 @@
     "tsconfig": "workspace:*",
     "typescript": "6.0.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.11",
+    "vitest": "4.1.12",
     "vitest-mock-extended": "4.0.0"
   },
   "engines": {
