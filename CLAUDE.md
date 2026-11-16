@@ -99,31 +99,33 @@ The app uses **Better Auth** (not NextAuth, despite `NEXTAUTH_SECRET` env var na
 
 ## LLM provider
 
-**`DEFAULT_LLM_PROVIDER=openrouter`** as of 2026-08-14. The fork ran on Anthropic
-direct until its prepaid credits ran out; it now routes through existing prepaid
-OpenRouter balance instead. All three tiers point at OpenRouter:
+**`DEFAULT_LLM_PROVIDER=anthropic`** as of 2026-11-16. All three tiers call Claude
+Haiku 5.5 directly on the Claude API, paid from the Max plan's $100/month API
+credit (linked to Console org "Rebekah's Individual Org"; credit expires each
+cycle, no rollover). Before that (2026-08-14 to 2026-11-16) everything went
+through OpenRouter.
 
 | Tier | Model | Used for |
 |---|---|---|
-| `DEFAULT_LLM_*` | `~anthropic/claude-sonnet-latest` | complex work — digest narrative, escalations |
-| `ECONOMY_LLM_*` | `openai/gpt-5.6-luna` | bulk / less critical |
-| `NANO_LLM_*` | `openai/gpt-5.6-luna` | cheapest, high-volume low-stakes |
+| `DEFAULT_LLM_*` | `claude-haiku-5-5` | in-app chat assistant (digest is off) |
+| `ECONOMY_LLM_*` | `claude-haiku-5-5` | email classification, calendar extraction |
+| `NANO_LLM_*` | `claude-haiku-5-5` | cheapest, high-volume low-stakes |
 
-The leading `~` on the Anthropic model is OpenRouter's "latest" alias syntax — it
-auto-tracks the newest Sonnet, so the model name does not go stale the way a
-pinned `claude-sonnet-4-6` would.
+Haiku 5.5 constraints the code must respect: no `temperature`/`top_p`/`top_k`
+(400), no assistant prefill (400), adaptive thinking is ON by default and counts
+toward `maxOutputTokens`. `utils/llms/model.ts` sets `effort: "low"` for Claude
+5.x models; keep output caps roomy (>=1000) rather than tight.
 
 These are set in AWS Parameter Store under `/inbox-zero/`, not in the repo, so
 changing a model means updating SSM and redeploying — not editing code. Verify
 what is actually live with `docker exec inbox-zero-app printenv | grep LLM`
-rather than trusting this table.
+rather than trusting this table. To roll back, set the three `*_LLM_PROVIDER`
+params to `openrouter` and the models to their old values
+(`~anthropic/claude-sonnet-latest`, `openai/gpt-5.6-luna`), then redeploy; the
+OpenRouter key is still in SSM.
 
-`ANTHROPIC_API_KEY` is still present in the environment but unused while the
-provider is `openrouter`. It has no credits; do not switch a tier back to
-`anthropic` expecting it to work.
-
-**Cost:** OpenRouter reports per-key spend at `GET /api/v1/key` (run it from the
-box so the key stays there). First measurements: ~$0.0002 per AI classification,
+**Cost:** Claude API spend shows in Console > Usage / Billing. (Under OpenRouter,
+per-key spend was at `GET /api/v1/key`.) First measurements: ~$0.0002 per AI classification,
 with only ~3 of 42 rule executions in a day needing AI at all — the rest resolve
 via static or learned matches. Treat that as directional, not a budget.
 
@@ -169,8 +171,8 @@ This project uses [GSD](https://github.com/get-shit-done-cc/gsd) for planning an
 **Core constraint:** AI cost ≤ $10/mo additional. The three-tier architecture is
 non-negotiable — rules (free) → cheap model (~$1-2/mo) → Sonnet sparingly (digest
 narrative + true escalations only). The *tiers* are the constraint, not the model
-names: the cheap tier was Claude Haiku when this was written and is now
-`openai/gpt-5.6-luna` via OpenRouter. See the LLM provider section for what is
+names: the cheap tier was Claude Haiku when this was written, was
+`openai/gpt-5.6-luna` via OpenRouter Aug–Nov 2026, and is now Claude Haiku 5.5. See the LLM provider section for what is
 currently wired up.
 
 **To continue work:**

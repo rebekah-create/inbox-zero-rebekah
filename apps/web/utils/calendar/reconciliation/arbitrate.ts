@@ -298,8 +298,9 @@ ${scheduleList}
     system,
     prompt,
     schema: arbitrationSchema,
-    temperature: 0,
-    maxOutputTokens: 100,
+    // No temperature: Claude 5.x rejects non-default sampling params. Cap leaves
+    // room for adaptive thinking (counts toward maxOutputTokens).
+    maxOutputTokens: 1000,
   });
 
   const parsed = arbitrationSchema.parse(result.object);

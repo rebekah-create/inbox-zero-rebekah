@@ -15,6 +15,12 @@ const haiku = {
   output: 5 / 1_000_000,
   cachedInput: 0.1 / 1_000_000,
 };
+// Claude Haiku 5.5, prompts <=100K tokens (longer prompts bill at 5x).
+const haiku5_5 = {
+  input: 0.1 / 1_000_000,
+  output: 0.5 / 1_000_000,
+  cachedInput: 0.01 / 1_000_000,
+};
 
 const gemini2_5flash = {
   input: 0.15 / 1_000_000,
@@ -80,6 +86,7 @@ export const STATIC_MODEL_PRICING: Record<string, ModelPricing> = {
   "claude-3-5-sonnet-20241022": sonnet,
   "claude-3-7-sonnet-20250219": sonnet,
   "claude-sonnet-4-6": sonnet,
+  "claude-haiku-5-5": haiku5_5,
   "claude-sonnet-4-5-20250929": sonnet,
   "anthropic/claude-3.5-sonnet": sonnet,
   "anthropic/claude-3.7-sonnet": sonnet,
