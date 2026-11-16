@@ -67,7 +67,7 @@ updates:
       - dependency-name: "@chronark/zod-bird"
       # v9+ breaks the shadcn/ui date picker
       - dependency-name: "react-day-picker"
-      # v4 has breaking changes with Tinybird
+      # stay on Zod 4.x; bump by hand (keep in lockstep with pnpm-workspace override)
       - dependency-name: "zod"
       # v5 imports zod/v4/core; keep pinned while app stays on Zod 3
       - dependency-name: "@hookform/resolvers"
